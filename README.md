@@ -4,8 +4,8 @@
 [![CI](https://github.com/Georgian-86/india-aqi-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/Georgian-86/india-aqi-tracker/actions/workflows/ci.yml)
 
 A [git scraping](https://simonwillison.net/2020/Oct/9/git-scraping/) project that records the
-air quality of five Indian metros — **Delhi, Mumbai, Bengaluru, Kolkata and Chennai** — once a
-day and commits the result to this repository. The git history *is* the database.
+air quality of eight Indian cities, **Delhi, Mumbai, Bengaluru, Kolkata, Chennai, Hyderabad,
+Pune and Ahmedabad**, once a day and commits the result to this repository. The git history *is* the database.
 
 ## Today's air quality
 
@@ -71,7 +71,7 @@ Every day at **03:17 UTC (08:47 IST)** the GitHub Actions workflow
 
 1. runs the test suite (`pytest`, no network);
 2. runs **`fetch.py`**, which makes a *single* request to the
-   [Open-Meteo Air Quality API](https://open-meteo.com/en/docs/air-quality-api) with all five
+   [Open-Meteo Air Quality API](https://open-meteo.com/en/docs/air-quality-api) with all eight
    cities' coordinates, asks for the current `us_aqi`, `pm2_5`, `pm10`, `nitrogen_dioxide` and
    `ozone`, and appends one row per city to [`data/aqi.csv`](data/aqi.csv).
    The same request also returns **yesterday's 24 hourly values**. From these it computes
@@ -133,7 +133,7 @@ Dependabot proposes upgrades monthly.
 | column | meaning |
 |---|---|
 | `date` | local date in Asia/Kolkata (from the API's `current.time`) |
-| `city` | Delhi, Mumbai, Bengaluru, Kolkata or Chennai |
+| `city` | Delhi, Mumbai, Bengaluru, Kolkata, Chennai, Hyderabad, Pune or Ahmedabad. The last three were added on 2026-09-23: their full-day history was backfilled 92 days, but their snapshots start that day |
 | `us_aqi` | US AQI (0–500) |
 | `pm2_5`, `pm10` | particulate matter, µg/m³ |
 | `no2` | nitrogen dioxide, µg/m³ |

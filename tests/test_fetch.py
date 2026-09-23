@@ -9,6 +9,8 @@ from common import CITIES, COLUMNS, DAILY_COLUMNS
 from conftest import FakeSession, make_response
 
 FETCHED_AT = "2026-09-23T03:17:00Z"
+N = len(CITIES)  # derive counts from CITIES so adding a city doesn't break tests
+NAMES = [c for c, _, _ in CITIES]
 # 03:17 UTC = 08:47 IST, two minutes after the fixture's current.time.
 NOW = datetime(2026, 9, 23, 3, 17, tzinfo=timezone.utc)
 
@@ -65,23 +67,23 @@ def test_parse_payload_missing_value_becomes_blank(payload):
 
 
 def test_parse_payload_rejects_wrong_location_count(payload):
-    with pytest.raises(fetch.FetchError, match="Expected 5"):
-        fetch.parse_payload(payload[:4], FETCHED_AT)
+    with pytest.raises(fetch.FetchError, match=f"Expected {N}"):
+        fetch.parse_payload(payload[:-1], FETCHED_AT)
 
 
 def test_append_creates_file_with_header(tmp_path, payload):
     path = tmp_path / "data" / "aqi.csv"
     written = fetch.append_rows(path, fetch.parse_payload(payload, FETCHED_AT))
-    assert written == 5
+    assert written == N
     lines = read_csv(path)
     assert lines[0] == COLUMNS
-    assert len(lines) == 6
+    assert len(lines) == N + 1
 
 
 def test_append_same_day_is_idempotent(tmp_path, payload):
     path = tmp_path / "aqi.csv"
     rows = fetch.parse_payload(payload, FETCHED_AT)
-    assert fetch.append_rows(path, rows) == 5
+    assert fetch.append_rows(path, rows) == N
     before = path.read_text()
 
     # Later fetch on the same IST day, with different values — still skipped.
@@ -95,7 +97,7 @@ def test_append_only_missing_cities(tmp_path, payload):
     path = tmp_path / "aqi.csv"
     rows = fetch.parse_payload(payload, FETCHED_AT)
     fetch.append_rows(path, rows[:2])  # Delhi, Mumbai already stored
-    assert fetch.append_rows(path, rows) == 3
+    assert fetch.append_rows(path, rows) == N - 2
     lines = read_csv(path)
     assert [line[1] for line in lines[1:]] == [c for c, _, _ in CITIES]
     assert sum(1 for line in lines if line == COLUMNS) == 1  # header once
@@ -106,8 +108,8 @@ def test_append_next_day_adds_rows(tmp_path, payload):
     fetch.append_rows(path, fetch.parse_payload(payload, FETCHED_AT))
     for loc in payload:
         loc["current"]["time"] = "2026-09-24T08:45"
-    assert fetch.append_rows(path, fetch.parse_payload(payload, FETCHED_AT)) == 5
-    assert len(read_csv(path)) == 11
+    assert fetch.append_rows(path, fetch.parse_payload(payload, FETCHED_AT)) == N
+    assert len(read_csv(path)) == 2 * N + 1
 
 
 def test_fetch_retries_then_succeeds(payload):
@@ -151,7 +153,7 @@ def test_main_success_writes_csv(tmp_path, payload, capsys):
     assert run_main(path, [make_response(200, payload)]) == 0
     assert run_main(path, [make_response(200, payload)]) == 0
     lines = read_csv(path)
-    assert len(lines) == 6  # second run deduped
+    assert len(lines) == N + 1  # second run deduped
     assert lines[1][-1] == "2026-09-23T03:17:00Z"
     assert "Wrote 0 new row(s)" in capsys.readouterr().out
 
@@ -187,15 +189,13 @@ def test_main_missing_aqi_stores_others_then_backfills(tmp_path, payload):
     path = tmp_path / "aqi.csv"
     payload[3]["current"]["us_aqi"] = None  # Kolkata
     assert run_main(path, [make_response(200, payload)]) == 1  # loud failure
-    assert [line[1] for line in read_csv(path)[1:]] == [
-        "Delhi", "Mumbai", "Bengaluru", "Chennai"
-    ]
+    assert [line[1] for line in read_csv(path)[1:]] == [c for c in NAMES if c != "Kolkata"]
 
     # Backup run later the same day gets Kolkata; only that row is added.
     payload[3]["current"]["us_aqi"] = 121
     assert run_main(path, [make_response(200, payload)]) == 0
     rows = read_csv(path)[1:]
-    assert len(rows) == 5
+    assert len(rows) == N
     assert rows[-1][:3] == ["2026-09-23", "Kolkata", "121"]
 
 
@@ -229,14 +229,14 @@ def test_parse_daily_skips_city_with_too_few_hours(payload):
         payload[4]["hourly"]["us_aqi"][i] = None
     rows, skipped = fetch.parse_daily(payload, FETCHED_AT)
     assert skipped == ["Chennai 2026-09-22"]
-    assert len(rows) == 4
+    assert len(rows) == N - 1
 
 
 def test_parse_daily_without_hourly_block_skips_all(payload):
     for loc in payload:
         del loc["hourly"]
     rows, skipped = fetch.parse_daily(payload, FETCHED_AT)
-    assert rows == [] and len(skipped) == 5
+    assert rows == [] and len(skipped) == N
 
 
 def test_main_writes_daily_csv_and_dedupes(tmp_path, payload):
@@ -245,7 +245,7 @@ def test_main_writes_daily_csv_and_dedupes(tmp_path, payload):
     assert run_main(path, [make_response(200, payload)], daily_path=daily) == 0
     lines = read_csv(daily)
     assert lines[0] == DAILY_COLUMNS
-    assert len(lines) == 6
+    assert len(lines) == N + 1
     assert {line[0] for line in lines[1:]} == {"2026-09-22"}
 
 
@@ -253,7 +253,7 @@ def test_main_fails_but_keeps_snapshot_when_hourly_missing(tmp_path, payload):
     path, daily = tmp_path / "aqi.csv", tmp_path / "aqi_daily.csv"
     del payload[2]["hourly"]  # Bengaluru
     assert run_main(path, [make_response(200, payload)], daily_path=daily) == 1
-    assert len(read_csv(path)) == 6  # snapshot fully stored
+    assert len(read_csv(path)) == N + 1  # snapshot fully stored
     assert "Bengaluru" not in [line[1] for line in read_csv(daily)]
 
 
@@ -278,11 +278,11 @@ def with_history(payload, days):
 def test_parse_daily_backfill_covers_every_past_day(payload):
     rows, skipped = fetch.parse_daily(with_history(payload, 3), FETCHED_AT, days=3)
     assert skipped == []
-    assert [(r["date"], r["city"]) for r in rows][:6] == [
-        ("2026-09-20", "Delhi"), ("2026-09-20", "Mumbai"), ("2026-09-20", "Bengaluru"),
-        ("2026-09-20", "Kolkata"), ("2026-09-20", "Chennai"), ("2026-09-21", "Delhi"),
-    ]
-    assert len(rows) == 15
+    # Ordered by date, then in CITIES order.
+    assert [(r["date"], r["city"]) for r in rows][:N + 1] == (
+        [("2026-09-20", c) for c in NAMES] + [("2026-09-21", NAMES[0])]
+    )
+    assert len(rows) == 3 * N
     assert {r["date"] for r in rows} == {"2026-09-20", "2026-09-21", "2026-09-22"}
     by_key = {(r["date"], r["city"]): r for r in rows}
     assert by_key[("2026-09-22", "Mumbai")]["us_aqi_mean"] == "121.0"  # 100 + 10*2 + 1
@@ -294,7 +294,7 @@ def test_parse_daily_backfill_reports_gaps_per_day(payload):
         payload[0]["hourly"]["us_aqi"][i] = None
     rows, skipped = fetch.parse_daily(payload, FETCHED_AT, days=3)
     assert skipped == ["Delhi 2026-09-21"]
-    assert len(rows) == 14
+    assert len(rows) == 3 * N - 1
 
 
 def test_main_backfill_then_daily_run_dedupes(tmp_path, payload):
@@ -304,10 +304,10 @@ def test_main_backfill_then_daily_run_dedupes(tmp_path, payload):
                       gases_csv_path=tmp_path / "gases.csv",
                       sleep=lambda s: None, now=NOW, past_days=5) == 0
     assert session.calls[0]["params"]["past_days"] == "5"
-    assert len(read_csv(daily)) == 1 + 25
+    assert len(read_csv(daily)) == 1 + 5 * N
     # The normal daily run afterwards adds nothing new for yesterday.
     assert run_main(path, [make_response(200, with_history(payload, 1))], daily_path=daily) == 0
-    assert len(read_csv(daily)) == 1 + 25
+    assert len(read_csv(daily)) == 1 + 5 * N
 
 
 @pytest.mark.parametrize("bad", ["0", "93", "-1"])
@@ -350,7 +350,7 @@ def test_main_writes_gases_csv_separately(tmp_path, payload):
     gases = read_csv(tmp_path / "aqi_daily_gases.csv")
     assert daily[0] == DAILY_COLUMNS  # unchanged schema, gas fields not leaked
     assert gases[0] == ["date", "city", "no2_mean", "o3_max8h", "fetched_at_utc"]
-    assert len(gases) == 6 and gases[1][:2] == ["2026-09-22", "Delhi"]
+    assert len(gases) == N + 1 and gases[1][:2] == ["2026-09-22", "Delhi"]
 
 
 def test_backfill_fills_gases_for_days_already_in_daily_csv(tmp_path, payload):
@@ -359,5 +359,5 @@ def test_backfill_fills_gases_for_days_already_in_daily_csv(tmp_path, payload):
     rows, _ = fetch.parse_daily(payload, FETCHED_AT)
     fetch.append_rows(daily, rows, DAILY_COLUMNS)
     assert run_main(path, [make_response(200, payload)], daily_path=daily) == 0
-    assert len(read_csv(daily)) == 6  # nothing duplicated
-    assert len(read_csv(tmp_path / "aqi_daily_gases.csv")) == 6  # gases filled in
+    assert len(read_csv(daily)) == N + 1  # nothing duplicated
+    assert len(read_csv(tmp_path / "aqi_daily_gases.csv")) == N + 1  # gases filled in

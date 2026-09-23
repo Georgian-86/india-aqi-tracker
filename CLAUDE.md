@@ -1,7 +1,8 @@
 # CLAUDE.md
 
-Git-scraping project: a daily GitHub Actions job records air quality for Delhi, Mumbai,
-Bengaluru, Kolkata and Chennai from the Open-Meteo Air Quality API (CAMS data) into
+Git-scraping project: a daily GitHub Actions job records air quality for
+Delhi, Mumbai, Bengaluru, Kolkata, Chennai, Hyderabad, Pune and Ahmedabad from the
+Open-Meteo Air Quality API (CAMS data) into
 `data/aqi.csv`, then redraws a chart and a README section.
 
 ## Layout
@@ -91,8 +92,13 @@ Bengaluru, Kolkata and Chennai from the Open-Meteo Air Quality API (CAMS data) i
 - **Lint:** `ruff check .` must pass (CI enforces it).
 - **Charts:** check them visually with 1 day and with many days of data. A short history
   gets a minimum 7-day x-window. Markers are dropped past 60 points per series.
-- **Adding a city:** append it to `CITIES` in `common.py`, add a colour in
-  `make_chart.CITY_COLORS`, add an entry to the test fixture, and update the README intro.
+- **Adding a city:** *append* it to the end of `CITIES` in `common.py` (never insert or
+  reorder: results map to CITIES by index), add a colour in `make_chart.CITY_COLORS` (next
+  unused slot of the validated palette; run the dataviz validator if you go past 8), add a
+  location at the same index in the test fixture, and update the README intro and data table.
+  Tests derive counts from `len(CITIES)` (`N` in `test_fetch.py`), so don't hard-code city
+  counts. After merging, run the workflow once with `past_days=92` to backfill the new
+  city's full-day history. Snapshots can't be backfilled.
 - Generated files (`data/`, the chart, the README AQI section) are written by the workflow.
   Don't hand-edit them.
 - Keep the Attribution section in README (CAMS + Open-Meteo, CC BY 4.0). It's a licence

@@ -7,6 +7,7 @@ snapshot (data/aqi.csv).
 
 from __future__ import annotations
 
+import math
 import sys
 from collections import defaultdict
 from datetime import date, timedelta
@@ -34,6 +35,9 @@ CITY_COLORS = {
     "Bengaluru": "#1baf7a",
     "Kolkata": "#eda100",
     "Chennai": "#e87ba4",
+    "Hyderabad": "#008300",
+    "Pune": "#4a3aa7",
+    "Ahmedabad": "#e34948",
 }
 SURFACE = "#fcfcfb"
 TEXT_PRIMARY = "#0b0b0b"
@@ -160,11 +164,15 @@ def render(
         ax.xaxis.set_major_locator(mdates.AutoDateLocator(minticks=3, maxticks=10))
         ax.xaxis.set_major_formatter(mdates.DateFormatter("%d %b"))
         ax.set_ylabel("US AQI", color=TEXT_SECONDARY)
-        ax.legend(loc="lower left", bbox_to_anchor=(0, 1.01), ncol=len(CITIES),
+        # Up to 5 entries fit in one row across the plot; beyond that, wrap to two rows.
+        ncol = len(CITIES) if len(CITIES) <= 5 else math.ceil(len(CITIES) / 2)
+        ax.legend(loc="lower left", bbox_to_anchor=(0, 1.01), ncol=ncol,
                   frameon=False, fontsize=9, labelcolor=TEXT_PRIMARY,
                   borderaxespad=0, handlelength=1.5)
 
-    ax.set_title(title, loc="left", color=TEXT_PRIMARY, fontsize=13, pad=26)
+    # Leave room above the axes for the legend: ~18 pt per legend row.
+    legend_rows = 1 if len(CITIES) <= 5 else 2
+    ax.set_title(title, loc="left", color=TEXT_PRIMARY, fontsize=13, pad=8 + 18 * legend_rows)
     fig.text(0.01, 0.01, f"Source: CAMS via Open-Meteo (CC BY 4.0) · {note}",
              color=TEXT_SECONDARY, fontsize=7.5)
     fig.tight_layout()
