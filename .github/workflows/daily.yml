@@ -28,7 +28,9 @@ concurrency:
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # Generous enough for a long backfill; the backfill step has its own,
+    # shorter timeout so a slow archive can't take the whole job down.
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -51,9 +53,14 @@ jobs:
           PAST_DAYS: ${{ inputs.past_days || 1 }}
         run: python fetch.py --past-days "$PAST_DAYS"
 
+      # A step timeout marks the step failed (not cancelled), so the steps
+      # below still run and commit whatever was backfilled so far; a re-run
+      # resumes from the oldest stored day. A *job* timeout would cancel
+      # everything and lose it all.
       - name: Backfill older history
         id: backfill
         if: ${{ inputs.since != '' && steps.tests.outcome == 'success' }}
+        timeout-minutes: 25
         env:
           SINCE: ${{ inputs.since }}
         run: python backfill.py --since "$SINCE"

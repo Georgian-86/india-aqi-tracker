@@ -54,6 +54,9 @@ Open-Meteo Air Quality API (CAMS data) into
   (that's how the archive's start is discovered; it isn't documented). It reuses
   `fetch.fetch_payload(params=…)`, `fetch.check_locations` and `fetch.day_stats`. The chart
   shows at most the last 365 days (`make_chart.MAX_WINDOW_DAYS`).
+- **Workflow timeouts:** long-running steps get a *step* `timeout-minutes` below the job's.
+  A timed-out step counts as failed, so the later `!cancelled()` steps still commit partial
+  progress. A job timeout cancels everything and loses it.
 - `report.py` writes `reports/YYYY-MM.md` for each completed month (last day present and at
   least `MIN_DAYS` days). **Reports are immutable**: an existing file is never rewritten. The
   README links them (`report_months`). It uses the same India AQI rule as the README (no O₃).
