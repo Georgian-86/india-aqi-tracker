@@ -44,6 +44,8 @@ TEXT_PRIMARY = "#0b0b0b"
 TEXT_SECONDARY = "#52514e"
 GRID = "#e4e3df"
 BAND = "#f1f0ec"
+# Short category names for the narrow right-hand margin of the panels.
+CATEGORY_SHORT = {"Unhealthy for Sensitive Groups": "USG", "Very Unhealthy": "V. Unhealthy"}
 MIN_WINDOW_DAYS = 7  # a zero-width date axis renders garbage ticks
 # Years of daily lines for 8 cities are unreadable; older history lives in
 # the monthly reports.
@@ -67,20 +69,13 @@ def y_limit(values: list[float]) -> tuple[float, bool]:
     return cap, True
 
 
-def peaks_above(points: list[tuple[date, float]], cap: float) -> list[tuple[date, float]]:
-    """The highest point of each consecutive run of points above cap."""
-    peaks: list[tuple[date, float]] = []
-    in_run = False
-    for d, v in points:
-        if v > cap:
-            if in_run and v > peaks[-1][1]:
-                peaks[-1] = (d, v)
-            elif not in_run:
-                peaks.append((d, v))
-            in_run = True
-        else:
-            in_run = False
-    return peaks
+def rolling_mean(points: list[tuple[date, float]], days: int = 7) -> list[tuple[date, float]]:
+    """Trailing mean over the last `days` calendar days (gaps shorten the window)."""
+    out = []
+    for i, (d, _) in enumerate(points):
+        window = [v for dd, v in points[: i + 1] if (d - dd).days < days]
+        out.append((d, sum(window) / len(window)))
+    return out
 
 
 def load_series(csv_path: Path, column: str = "us_aqi") -> dict[str, list[tuple[date, float]]]:
@@ -113,85 +108,101 @@ def render(
     out_path: Path = CHART_PATH,
     daily_csv_path: Path = DAILY_CSV_PATH,
 ) -> Path:
+    """Small multiples: one panel per city, shared axes, daily + 7-day mean.
+
+    A single 8-line chart of a year of daily values was unreadable, and
+    per-run peak labels overlapped into garbage once dust-storm spikes
+    were frequent. Panels make each city legible and directly comparable.
+    """
     series = load_series(daily_csv_path, "us_aqi_mean")
     if series:
-        title = "Daily mean US AQI — Indian metros"
-        note = "24-hour mean of hourly model values"
+        title = "Daily mean US AQI — Indian cities"
+        note = "24-hour mean of hourly model values; bold line = 7-day mean"
     else:
         series = load_series(csv_path)
-        title = "Daily US AQI snapshot — Indian metros"
+        title = "Daily US AQI snapshot — Indian cities"
         note = "one model reading per day"
     series = recent(series)
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
-    fig, ax = plt.subplots(figsize=(10, 5), dpi=120)
-    fig.patch.set_facecolor(SURFACE)
-    ax.set_facecolor(SURFACE)
-
     if not series:
+        fig, ax = plt.subplots(figsize=(10, 5), dpi=120)
+        fig.patch.set_facecolor(SURFACE)
         ax.text(0.5, 0.5, "No data collected yet", ha="center", va="center",
                 color=TEXT_SECONDARY, fontsize=14, transform=ax.transAxes)
         ax.set_axis_off()
-    else:
-        top, clipped = y_limit([v for pts in series.values() for _, v in pts])
-        if clipped:
-            note += f" · values above {top:.0f} run off the top (peaks labelled)"
+        fig.savefig(out_path, facecolor=SURFACE)
+        plt.close(fig)
+        return out_path
 
-        # Alternating neutral bands for EPA categories, labelled on the right.
+    cities = [c for c, _, _ in CITIES if series.get(c)]
+    # Two columns: time series want width, and the README shows images at
+    # ~850 px, so a 4-wide grid would shrink every label to illegibility.
+    ncols = min(2, len(cities))
+    nrows = math.ceil(len(cities) / ncols)
+    fig, axes = plt.subplots(nrows, ncols, figsize=(9.5, 2.1 * nrows + 1.0),
+                             dpi=120, sharex=True, sharey=True, squeeze=False)
+    fig.patch.set_facecolor(SURFACE)
+
+    top, clipped = y_limit([v for c in cities for _, v in series[c]])
+    first = min(d for c in cities for d, _ in series[c])
+    last = max(d for c in cities for d, _ in series[c])
+    first = min(first, last - timedelta(days=MIN_WINDOW_DAYS - 1))
+    bands = AQI_CATEGORIES + [(10_000, "Hazardous")]
+
+    for i, ax in enumerate(axes.flat):
+        if i >= len(cities):
+            ax.set_axis_off()
+            continue
+        city = cities[i]
+        pts = series[city]
+        color = CITY_COLORS[city]
+        ax.set_facecolor(SURFACE)
         lower = 0
-        for i, (upper, label) in enumerate(AQI_CATEGORIES + [(10_000, "Hazardous")]):
+        for j, (upper, label) in enumerate(bands):
             if lower >= top:
                 break
-            if i % 2 == 1:
+            if j % 2 == 1:
                 ax.axhspan(lower, min(upper, top), color=BAND, zorder=0, lw=0)
-            mid = (lower + min(upper, top)) / 2
-            ax.text(1.005, mid, label, transform=ax.get_yaxis_transform(),
-                    fontsize=7.5, color=TEXT_SECONDARY, va="center")
+            if i % ncols == ncols - 1:  # category names on the right-hand column only
+                ax.text(1.02, (lower + min(upper, top)) / 2, CATEGORY_SHORT.get(label, label),
+                        transform=ax.get_yaxis_transform(), fontsize=8,
+                        color=TEXT_SECONDARY, va="center")
             lower = upper
 
-        for city, _, _ in CITIES:
-            pts = series.get(city)
-            if not pts:
-                continue
-            xs, ys = zip(*pts)
-            marker = "o" if len(pts) <= MAX_MARKER_POINTS else None
-            ax.plot(xs, ys, label=city, color=CITY_COLORS[city], lw=2,
-                    marker=marker, markersize=6, markeredgecolor=SURFACE,
-                    markeredgewidth=1.5, zorder=3)
-            for d, v in peaks_above(pts, top) if clipped else []:
-                ax.plot([d], [top], marker="^", markersize=7, color=CITY_COLORS[city],
-                        markeredgecolor=SURFACE, clip_on=False, zorder=4)
-                ax.annotate(f"{v:.0f}", xy=(d, top), xytext=(5, -2),
-                            textcoords="offset points", ha="left", va="top",
-                            fontsize=7.5, color=TEXT_SECONDARY, zorder=5,
-                            bbox={"boxstyle": "square,pad=0.15", "fc": SURFACE, "ec": "none"})
+        xs, ys = zip(*pts)
+        if len(pts) <= MAX_MARKER_POINTS:
+            ax.plot(xs, ys, color=color, lw=2, marker="o", markersize=5,
+                    markeredgecolor=SURFACE, markeredgewidth=1.2, zorder=3)
+        else:
+            ax.plot(xs, ys, color=color, lw=0.8, alpha=0.35, zorder=2)
+            mx, my = zip(*rolling_mean(pts))
+            ax.plot(mx, my, color=color, lw=2, zorder=3)
 
-        first = min(d for pts in series.values() for d, _ in pts)
-        last = max(d for pts in series.values() for d, _ in pts)
-        first = min(first, last - timedelta(days=MIN_WINDOW_DAYS - 1))
-        # Half a day of padding each side (date objects can't hold hours).
+        peak_day, peak = max(pts, key=lambda p: (p[1], p[0]))
+        if peak > top:  # one note per panel, never overlapping labels
+            ax.text(0.98, 0.96, f"peak {peak:.0f} · {peak_day:%d %b}", transform=ax.transAxes,
+                    ha="right", va="top", fontsize=8.5, color=TEXT_SECONDARY, zorder=5,
+                    bbox={"boxstyle": "square,pad=0.2", "fc": SURFACE, "ec": "none"})
+
+        ax.set_title(city, loc="left", fontsize=11, color=TEXT_PRIMARY, pad=4)
         ax.set_xlim(mdates.date2num(first) - 0.5, mdates.date2num(last) + 0.5)
         ax.set_ylim(0, top)
-        ax.grid(axis="y", color=GRID, lw=0.8, zorder=1)
+        ax.grid(axis="y", color=GRID, lw=0.6, zorder=1)
         for side in ("top", "right", "left"):
             ax.spines[side].set_visible(False)
         ax.spines["bottom"].set_color(GRID)
         ax.tick_params(colors=TEXT_SECONDARY, length=0, labelsize=9)
-        ax.xaxis.set_major_locator(mdates.AutoDateLocator(minticks=3, maxticks=10))
-        ax.xaxis.set_major_formatter(mdates.DateFormatter("%d %b"))
-        ax.set_ylabel("US AQI", color=TEXT_SECONDARY)
-        # Up to 5 entries fit in one row across the plot; beyond that, wrap to two rows.
-        ncol = len(CITIES) if len(CITIES) <= 5 else math.ceil(len(CITIES) / 2)
-        ax.legend(loc="lower left", bbox_to_anchor=(0, 1.01), ncol=ncol,
-                  frameon=False, fontsize=9, labelcolor=TEXT_PRIMARY,
-                  borderaxespad=0, handlelength=1.5)
+        locator = mdates.AutoDateLocator(minticks=3, maxticks=5)
+        ax.xaxis.set_major_locator(locator)
+        ax.xaxis.set_major_formatter(mdates.ConciseDateFormatter(locator))
 
-    # Leave room above the axes for the legend: ~18 pt per legend row.
-    legend_rows = 1 if len(CITIES) <= 5 else 2
-    ax.set_title(title, loc="left", color=TEXT_PRIMARY, fontsize=13, pad=8 + 18 * legend_rows)
-    fig.text(0.01, 0.01, f"Source: CAMS via Open-Meteo (CC BY 4.0) · {note}",
-             color=TEXT_SECONDARY, fontsize=7.5)
-    fig.tight_layout()
+    if clipped:
+        note += f" · axis capped at {top:.0f}, higher peaks noted per city"
+    fig.suptitle(title, x=0.01, ha="left", color=TEXT_PRIMARY, fontsize=14)
+    fig.text(0.01, 0.005, f"Source: CAMS via Open-Meteo (CC BY 4.0) · {note}",
+             color=TEXT_SECONDARY, fontsize=8, wrap=True)
+    fig.tight_layout(rect=(0, 0.025, 1, 0.975))
     fig.savefig(out_path, facecolor=SURFACE)
     plt.close(fig)
     return out_path

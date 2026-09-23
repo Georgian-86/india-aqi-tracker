@@ -33,8 +33,12 @@ Open-Meteo Air Quality API (CAMS data) into
   (force-pushed via `hash-object`/`mktree`/`commit-tree`). The README embeds it from
   `update_readme.CHART_URL`. Never commit chart images to main. It plots
   `us_aqi_mean` from `aqi_daily.csv`, falling back to snapshot `us_aqi` only if there's no
-  daily data. `y_limit()` caps the axis at max(300, p95 × 1.15) when rare extremes would
-  squash the other lines. `peaks_above()` labels one peak per clipped run.
+  daily data. It draws **small multiples**: one panel per city in a 2-column grid, with
+  shared axes, daily values as a faint line and a bold 7-day mean (`rolling_mean`).
+  `y_limit()` caps the shared axis at max(300, p95 × 1.15), and each panel with values above
+  the cap gets one "peak N · date" note. Don't return to one multi-line chart or per-run peak
+  labels: both were unreadable with a year of data. Check renders at README width (~850 px):
+  keep the figure ≤ ~1150 px wide and fonts ≥ 8 pt.
 - `update_readme.py` replaces the text between `<!-- AQI:START -->` and `<!-- AQI:END -->`
   with a snapshot table ("vs prev." is only shown when readings are within 3 h of the same
   time of day), a full-day table with a 7-day mean plus CPCB health advice (`NAQI_HEALTH`,
