@@ -1,5 +1,5 @@
 # Exact pins keep the daily job reproducible; Dependabot proposes upgrades
 # (monthly) and CI checks them before they reach main.
-requests==2.33.1
+requests==2.34.2
 matplotlib==3.11.2
-pytest==8.4.2
+pytest==9.1.1
