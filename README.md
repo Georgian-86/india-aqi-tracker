@@ -10,7 +10,7 @@ Pune and Ahmedabad**, once a day and commits the result to this repository. The 
 ## Today's air quality
 
 <!-- AQI:START -->
-**Latest snapshot: 2026-09-23** (fetched 22:00 IST · 1 day collected)
+**Latest snapshot: 2026-09-23** (fetched 22:50 IST · 1 day collected)
 
 | City | US AQI | Category | vs prev. | PM2.5 (µg/m³) | PM10 (µg/m³) | NO₂ (µg/m³) | O₃ (µg/m³) |
 |---|--:|---|:-:|--:|--:|--:|--:|
@@ -19,6 +19,9 @@ Pune and Ahmedabad**, once a day and commits the result to this repository. The 
 | Bengaluru | 55 | 🟡 Moderate | – | 16.6 | 22.8 | 14.5 | 64 |
 | Kolkata | 33 | 🟢 Good | – | 8.4 | 9.2 | 9.2 | 45 |
 | Chennai | 64 | 🟡 Moderate | – | 14.5 | 16 | 24.7 | 50 |
+| Hyderabad | 75 | 🟡 Moderate | – | 20 | 20.6 | 7.7 | 97 |
+| Pune | 99 | 🟡 Moderate | – | 30 | 30.9 | 17 | 98 |
+| Ahmedabad | 98 | 🟡 Moderate | – | 36.6 | 44.5 | 46.4 | 37 |
 
 <sub>vs prev.: change since the previous snapshot; “–” when there is none or the two were taken more than 3 h apart in time of day (AQI has a daily cycle).</sub>
 
@@ -31,6 +34,9 @@ Pune and Ahmedabad**, once a day and commits the result to this repository. The 
 | Bengaluru | 49 | 🟢 Good | 53 | 56 | 10.5 | 19 Good · NO₂ |
 | Kolkata | 64 | 🟡 Moderate | 72 | 104 | 10.1 | 17 Good · PM2.5 |
 | Chennai | 73 | 🟡 Moderate | 84 | 93 | 17 | 28 Good · PM2.5 |
+| Hyderabad | 98 | 🟡 Moderate | 103 | 84 | 34.8 | 58 Satisfactory · PM2.5 |
+| Pune | 76 | 🟡 Moderate | 93 | 55 | 19.1 | 32 Good · PM2.5 |
+| Ahmedabad | 115 | 🟠 Unhealthy for Sensitive Groups | 157 | 73 | 39 | 65 Satisfactory · PM2.5 |
 
 <sub>¹ India's National AQI (CPCB) scale: Good ≤ 50 · Satisfactory ≤ 100 · Moderate ≤ 200 · Poor ≤ 300 · Very Poor ≤ 400 · Severe. Computed from the day's mean PM2.5, PM10 and NO₂ (3 of CPCB's 8 pollutants, its minimum), labelled with the pollutant that sets it. ² marks a day with fewer than 3. Ozone is left out: the CAMS model's surface ozone runs far above ground measurements over India, and would make O₃ the main pollutant almost every day. The India figure often reads better than the US one because US breakpoints are stricter (PM2.5 is "Good" only up to 9 µg/m³ in the US, vs 30 in India).</sub>
 
@@ -46,6 +52,9 @@ Pune and Ahmedabad**, once a day and commits the result to this repository. The 
 | Bengaluru | 13 | 17 | · | · | · | · | 52 | 80 on 2026-09-15 |
 | Kolkata | 1 | 20 | 8 | 1 | · | · | 87 | 164 on 2026-09-19 |
 | Chennai | · | 29 | 1 | · | · | · | 77 | 108 on 2026-09-17 |
+| Hyderabad | 1 | 29 | · | · | · | · | 70 | 98 on 2026-09-22 |
+| Pune | 21 | 9 | · | · | · | · | 44 | 76 on 2026-09-21 |
+| Ahmedabad | 1 | 28 | 1 | · | · | · | 70 | 115 on 2026-09-22 |
 
 **Last 30 days on India's scale** (2026-08-24 to 2026-09-22, CPCB categories from PM2.5, PM10 and NO₂): days in each category, and which pollutant set the index how often
 
@@ -56,6 +65,9 @@ Pune and Ahmedabad**, once a day and commits the result to this repository. The 
 | Bengaluru | 30 | · | · | · | · | · | NO₂ 14 · PM10 8 · PM2.5 8 |
 | Kolkata | 20 | 9 | 1 | · | · | · | PM2.5 30 |
 | Chennai | 30 | · | · | · | · | · | PM2.5 30 |
+| Hyderabad | 27 | 3 | · | · | · | · | PM2.5 25 · PM10 5 |
+| Pune | 30 | · | · | · | · | · | PM2.5 14 · PM10 12 · NO₂ 4 |
+| Ahmedabad | 25 | 5 | · | · | · | · | PM10 19 · PM2.5 8 · NO₂ 3 |
 
 ![US AQI trend by city](https://raw.githubusercontent.com/Georgian-86/india-aqi-tracker/charts/aqi_trend.png)
 <!-- AQI:END -->
