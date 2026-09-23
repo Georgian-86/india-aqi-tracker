@@ -26,13 +26,13 @@ day and commits the result to this repository. The git history *is* the database
 
 | City | Mean AQI | Category | Peak AQI | 7-day mean | Mean PM2.5 (µg/m³) | India AQI¹ |
 |---|--:|---|--:|--:|--:|---|
-| Delhi | 172 | 🔴 Unhealthy | 206 | 157 | 68.8 | 302 Very Poor · O₃ |
-| Mumbai | 96 | 🟡 Moderate | 130 | 76 | 24.5 | 181 Moderate · O₃ |
-| Bengaluru | 49 | 🟢 Good | 53 | 56 | 10.5 | 65 Satisfactory · O₃ |
-| Kolkata | 64 | 🟡 Moderate | 72 | 104 | 10.1 | 96 Satisfactory · O₃ |
-| Chennai | 73 | 🟡 Moderate | 84 | 93 | 17 | 141 Moderate · O₃ |
+| Delhi | 172 | 🔴 Unhealthy | 206 | 157 | 68.8 | 129 Moderate · PM2.5 |
+| Mumbai | 96 | 🟡 Moderate | 130 | 76 | 24.5 | 41 Good · PM2.5 |
+| Bengaluru | 49 | 🟢 Good | 53 | 56 | 10.5 | 19 Good · NO₂ |
+| Kolkata | 64 | 🟡 Moderate | 72 | 104 | 10.1 | 17 Good · PM2.5 |
+| Chennai | 73 | 🟡 Moderate | 84 | 93 | 17 | 28 Good · PM2.5 |
 
-<sub>¹ India's National AQI (CPCB) scale: Good ≤ 50 · Satisfactory ≤ 100 · Moderate ≤ 200 · Poor ≤ 300 · Very Poor ≤ 400 · Severe. Computed from the day's mean PM2.5, PM10 and NO₂ and maximum 8-hour O₃ (4 of CPCB's 8 pollutants), and labelled with the pollutant that sets it. ² marks a day with fewer than the 3 pollutants CPCB requires. It often reads better than the US figure because US breakpoints are stricter (PM2.5 is "Good" only up to 9 µg/m³ in the US, vs 30 in India).</sub>
+<sub>¹ India's National AQI (CPCB) scale: Good ≤ 50 · Satisfactory ≤ 100 · Moderate ≤ 200 · Poor ≤ 300 · Very Poor ≤ 400 · Severe. Computed from the day's mean PM2.5, PM10 and NO₂ (3 of CPCB's 8 pollutants, its minimum), labelled with the pollutant that sets it. ² marks a day with fewer than 3. Ozone is left out: the CAMS model's surface ozone runs far above ground measurements over India, and would make O₃ the main pollutant almost every day. The India figure often reads better than the US one because US breakpoints are stricter (PM2.5 is "Good" only up to 9 µg/m³ in the US, vs 30 in India).</sub>
 
 **Last 30 days** (2026-08-24 to 2026-09-22, full-day means · 30 days of data): days in each category
 
@@ -43,6 +43,16 @@ day and commits the result to this repository. The git history *is* the database
 | Bengaluru | 13 | 17 | · | · | · | · | 52 | 80 on 2026-09-15 |
 | Kolkata | 1 | 20 | 8 | 1 | · | · | 87 | 164 on 2026-09-19 |
 | Chennai | · | 29 | 1 | · | · | · | 77 | 108 on 2026-09-17 |
+
+**Last 30 days on India's scale** (2026-08-24 to 2026-09-22, CPCB categories from PM2.5, PM10 and NO₂): days in each category, and which pollutant set the index how often
+
+| City | Good | Satisfactory | Moderate | Poor | Very Poor | Severe | Main pollutants |
+|---|--:|--:|--:|--:|--:|--:|---|
+| Delhi | 4 | 9 | 11 | 2 | 3 | 1 | PM2.5 22 · PM10 8 |
+| Mumbai | 27 | 3 | · | · | · | · | PM10 24 · PM2.5 6 |
+| Bengaluru | 30 | · | · | · | · | · | NO₂ 14 · PM10 8 · PM2.5 8 |
+| Kolkata | 20 | 9 | 1 | · | · | · | PM2.5 30 |
+| Chennai | 30 | · | · | · | · | · | PM2.5 30 |
 
 ![US AQI trend by city](https://raw.githubusercontent.com/Georgian-86/india-aqi-tracker/charts/aqi_trend.png)
 <!-- AQI:END -->
@@ -154,10 +164,17 @@ the append-only `aqi_daily.csv` never needs its header rewritten:
   and categories (Good, Satisfactory, Moderate, Poor, Very Poor, Severe). On 22 Sep 2026,
   Delhi was US 172 "Unhealthy" but India 129 "Moderate". The gap has two causes: the US
   breakpoints are stricter (PM2.5 is "Good" only up to 9 µg/m³, vs 30 in India), and the US
-  figure also includes ozone and NO₂. The India figure uses 4 of CPCB's 8 pollutants
-  (PM2.5, PM10, NO₂ and 8-hour O₃), with CPCB's averaging periods, and names the pollutant
-  that sets it. A day with fewer than the 3 pollutants CPCB requires is marked ². "Severe
-  (401+)" has no number, because CPCB publishes no upper concentration for that band.
+  figure also includes ozone and NO₂. The India figure uses PM2.5, PM10 and NO₂ (24-hour
+  means), which is CPCB's minimum of three pollutants including PM, and names the pollutant
+  that sets it. A day with fewer than 3 is marked ². "Severe (401+)" has no number, because
+  CPCB publishes no upper concentration for that band.
+- **Ozone is recorded but not used in the India AQI.** Compared with ground stations across
+  India, CAMS surface ozone has been found to run 42–108 µg/m³ above observations, where
+  observed daily means are about 7–58 µg/m³
+  ([Springer, 2025](https://link.springer.com/article/10.1007/s42865-025-00109-x)).
+  Including it made O₃ the "main pollutant" in every city on almost every day, even during
+  the monsoon, and pushed Delhi to "Very Poor" on a day PM put at "Moderate". The O₃ column
+  in `aqi_daily_gases.csv` is kept for reference only. Treat it as heavily biased.
 
 - Values are **model estimates** from the CAMS global forecast (~40 km grid), not readings
   from ground monitoring stations. They are good for trends and comparisons but can differ

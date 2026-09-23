@@ -13,6 +13,10 @@ Bengaluru, Kolkata and Chennai from the Open-Meteo Air Quality API (CAMS data) i
   and `read_rows()`. India AQI is computed at render time from stored means. Don't add it as
   a CSV column. Above the last CPCB band it returns `index=None` ("Severe"); never
   extrapolate a number.
+- **Don't put O₃ back into the India AQI** (`update_readme.india_result` passes no ozone).
+  CAMS surface ozone is strongly biased high over India. With it, O₃ was the prominent
+  pollutant almost every day in every city. Check any new pollutant against real data
+  (which pollutant becomes "prominent", and how often) before trusting it.
 - Gas stats (`no2_mean`, `o3_max8h`) go to `data/aqi_daily_gases.csv` (`GAS_COLUMNS`), never
   as new columns in `aqi_daily.csv`. Adding columns would mean rewriting its header, and it
   is append-only. `append_rows` uses `extrasaction="ignore"`, so one row dict can feed
