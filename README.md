@@ -100,10 +100,11 @@ Every day at **03:17 UTC (08:47 IST)** the GitHub Actions workflow
 3. runs **`make_chart.py`** to redraw the chart, then publishes it to the
    [`charts`](../../tree/charts) branch. That branch holds a single commit that is replaced on
    every run, so a new image each day doesn't bloat the repository's history. The
-   chart plots the full-day mean AQI, falling back to the single snapshot only when no
-   full-day data exists yet. If a rare extreme (such as a dust storm pushing Delhi past 600)
-   would squash the other lines, the y-axis is capped at max(300, 95th percentile × 1.15).
-   Clipped runs are marked ▲ with their peak value;
+   chart has one panel per city for the last 12 months, with shared axes so levels compare
+   directly: daily full-day means as a faint line, and a bold 7-day mean. It falls back to the
+   single snapshot only when no full-day data exists yet. So that a dust storm pushing Delhi
+   past 600 doesn't flatten every panel, the shared axis is capped at max(300, 95th
+   percentile × 1.15), and a panel with higher values notes its peak;
 4. runs **`report.py`**, which writes a **monthly report** to [`reports/`](reports/) once a
    month completes (a city ranking, days per India AQI category, and the main pollutants).
    Reports are written once and never rewritten, like the CSVs. Months with fewer than 20
