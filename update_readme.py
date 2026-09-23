@@ -18,6 +18,7 @@ from common import (
     README_PATH,
     aqi_category,
     NAQI_CATEGORIES,
+    NAQI_HEALTH,
     NAQI_SEVERE,
     Naqi,
     naqi,
@@ -148,6 +149,31 @@ def render_daily(
         "reads better than the US one because US breakpoints are stricter (PM2.5 is "
         "\"Good\" only up to 9 µg/m³ in the US, vs 30 in India).</sub>",
     ]
+    lines += _health_advice({
+        city: india_result(r, gases.get(city, {})).category for city, r in latest.items()
+    })
+    return lines
+
+
+def _health_advice(categories: dict[str, str]) -> list[str]:
+    """CPCB health statements for cities at Moderate or worse on India's scale."""
+    order = [label for _, label in NAQI_CATEGORIES] + [NAQI_SEVERE]
+    worrying = order[order.index("Moderate"):]
+    by_category: dict[str, list[str]] = {}
+    for city, _, _ in CITIES:
+        if categories.get(city) in worrying:
+            by_category.setdefault(categories[city], []).append(city)
+    if not categories or all(c == "N/A" for c in categories.values()):
+        return []
+    if not by_category:
+        return ["", "**Health (CPCB):** every city was Good or Satisfactory on India's scale. "
+                    "Minimal impact, with at most minor discomfort for sensitive people."]
+    lines = ["", "**Health (CPCB):**"]
+    for category in reversed(worrying):  # worst first
+        if category in by_category:
+            lines.append(
+                f"- **{', '.join(by_category[category])}**, {category}: {NAQI_HEALTH[category]}"
+            )
     return lines
 
 
@@ -176,13 +202,21 @@ CATEGORY_SHORT = {
 }
 
 
+def _summary_window(daily_rows: list[dict[str, str]]) -> tuple[str, str] | None:
+    """(start, end) of the last SUMMARY_DAYS days, or None with under 2 days of
+    data (a summary would only repeat the single-day table)."""
+    days_present = sorted({r["date"] for r in daily_rows})
+    if len(days_present) < 2:
+        return None
+    end = days_present[-1]
+    return (date.fromisoformat(end) - timedelta(days=SUMMARY_DAYS - 1)).isoformat(), end
+
+
 def render_summary(daily_rows: list[dict[str, str]]) -> list[str]:
     """Days per EPA category, mean and worst day per city over the last 30 days."""
-    days_present = sorted({r["date"] for r in daily_rows})
-    if len(days_present) < 2:  # nothing beyond the single-day table
+    if (window := _summary_window(daily_rows)) is None:
         return []
-    end = days_present[-1]
-    start = (date.fromisoformat(end) - timedelta(days=SUMMARY_DAYS - 1)).isoformat()
+    start, end = window
     window = [r for r in daily_rows if start <= r["date"] <= end]
     n_days = len({r["date"] for r in window})
     categories = [label for _, label in AQI_CATEGORIES] + [HAZARDOUS]
@@ -217,11 +251,9 @@ def render_india_summary(
     daily_rows: list[dict[str, str]], gas_rows: list[dict[str, str]]
 ) -> list[str]:
     """Days per CPCB category and the main pollutants per city, last 30 days."""
-    days_present = sorted({r["date"] for r in daily_rows})
-    if len(days_present) < 2:
+    if (window := _summary_window(daily_rows)) is None:
         return []
-    end = days_present[-1]
-    start = (date.fromisoformat(end) - timedelta(days=SUMMARY_DAYS - 1)).isoformat()
+    start, end = window
     gases = {(g["date"], g["city"]): g for g in gas_rows}
     categories = [label for _, label in NAQI_CATEGORIES] + [NAQI_SEVERE]
 
@@ -255,11 +287,29 @@ def render_india_summary(
     return lines
 
 
+def _staleness_warning(latest: str, as_of: date | None) -> list[str]:
+    """A visible warning when today's (IST) snapshot is missing. The README step
+    runs even when fetch.py fails, so readers see a problem, not stale numbers."""
+    if as_of is None:
+        return []
+    age = (as_of - date.fromisoformat(latest)).days
+    if age < 1:
+        return []
+    return [
+        f"> ⚠️ **Data may be out of date:** the latest snapshot is from {latest}, "
+        f"{age} day{'s' if age != 1 else ''} ago. The daily job may be failing; see "
+        "[Actions](../../actions/workflows/daily.yml).",
+        "",
+    ]
+
+
 def render_section(
     rows: list[dict[str, str]],
     daily_rows: list[dict[str, str]] | None = None,
     gas_rows: list[dict[str, str]] | None = None,
+    as_of: date | None = None,
 ) -> str:
+    """as_of: today's IST date, to flag stale data (None skips the check)."""
     if not rows:
         body = "_No data collected yet — the first snapshot arrives with the next scheduled run._"
         return f"{START}\n{body}\n{END}"
@@ -271,7 +321,7 @@ def render_section(
     details = [f"fetched {fetched}"] if fetched else []
     details.append(f"{days} day{'s' if days != 1 else ''} collected")
 
-    lines = [
+    lines = _staleness_warning(latest, as_of) + [
         f"**Latest snapshot: {latest}** ({' · '.join(details)})",
         "",
         "| City | US AQI | Category | vs prev. | PM2.5 (µg/m³) | PM10 (µg/m³) | NO₂ (µg/m³) | O₃ (µg/m³) |",
@@ -304,11 +354,12 @@ def update_readme(
     rows: list[dict[str, str]],
     daily_rows: list[dict[str, str]] | None = None,
     gas_rows: list[dict[str, str]] | None = None,
+    as_of: date | None = None,
 ) -> str:
     pattern = re.compile(re.escape(START) + r".*?" + re.escape(END), re.DOTALL)
     if not pattern.search(readme_text):
         raise ValueError(f"README is missing the {START} ... {END} markers")
-    section = render_section(rows, daily_rows, gas_rows)
+    section = render_section(rows, daily_rows, gas_rows, as_of)
     return pattern.sub(lambda _: section, readme_text, count=1)
 
 
@@ -324,6 +375,7 @@ def main(
             read_rows(csv_path),
             read_rows(daily_csv_path),
             read_rows(gases_csv_path),
+            as_of=datetime.now(IST).date(),
         )
     except (OSError, ValueError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)

@@ -90,6 +90,19 @@ NAQI_CATEGORIES: list[tuple[int, str]] = [
     (400, "Very Poor"),
 ]
 NAQI_SEVERE = "Severe"
+# CPCB's health statement for each NAQI category (from the 2014 NAQI launch).
+NAQI_HEALTH = {
+    "Good": "Minimal impact.",
+    "Satisfactory": "May cause minor breathing discomfort to sensitive people.",
+    "Moderate": "May cause breathing discomfort to people with lung disease such as asthma, "
+                "and discomfort to people with heart disease, children and older adults.",
+    "Poor": "May cause breathing discomfort to people on prolonged exposure, and discomfort "
+            "to people with heart disease.",
+    "Very Poor": "May cause respiratory illness on prolonged exposure. Effects may be more "
+                 "pronounced in people with lung and heart diseases.",
+    "Severe": "May cause respiratory effects even in healthy people, and serious health "
+              "impacts in people with lung or heart disease, even during light activity.",
+}
 
 
 def naqi_subindex(pollutant: str, conc: float) -> float | None:

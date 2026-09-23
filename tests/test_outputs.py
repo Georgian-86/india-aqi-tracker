@@ -304,3 +304,49 @@ def test_india_summary_omitted_with_single_day(csv_path):
     daily = [daily_row("2026-09-22", "Delhi", "100.0")]
     out = update_readme.update_readme(README, read_rows(csv_path), daily, [])
     assert "India's scale" not in out
+
+
+# --- staleness warning ---------------------------------------------------------
+
+@pytest.mark.parametrize("as_of, expected", [
+    (None, None),
+    (date(2026, 9, 23), None),  # today's snapshot present
+    (date(2026, 9, 24), "from 2026-09-23, 1 day ago"),
+    (date(2026, 9, 26), "from 2026-09-23, 3 days ago"),
+])
+def test_staleness_warning(csv_path, as_of, expected):
+    out = update_readme.update_readme(README, read_rows(csv_path), as_of=as_of)
+    if expected is None:
+        assert "out of date" not in out
+    else:
+        assert f"⚠️ **Data may be out of date:** the latest snapshot is {expected}" in out
+        assert out.index("out of date") < out.index("Latest snapshot")
+
+
+# --- CPCB health advice ----------------------------------------------------------
+
+def test_health_advice_worst_first_and_grouped(csv_path):
+    daily = [
+        {**daily_row("2026-09-22", "Delhi", "300.0", pm25="200.0"), "pm10_mean": "10"},  # Very Poor
+        {**daily_row("2026-09-22", "Mumbai", "90.0", pm25="70.0"), "pm10_mean": "10"},  # Moderate
+        {**daily_row("2026-09-22", "Kolkata", "90.0", pm25="75.0"), "pm10_mean": "10"},  # Moderate
+        {**daily_row("2026-09-22", "Chennai", "30.0", pm25="10.0"), "pm10_mean": "10"},  # Good
+    ]
+    out = update_readme.update_readme(README, read_rows(csv_path), daily)
+    advice = out[out.index("**Health (CPCB):**"):]
+    assert advice.index("**Delhi**, Very Poor") < advice.index("**Mumbai, Kolkata**, Moderate")
+    assert "Chennai" not in advice.split("![")[0].split("Last 30")[0]
+    assert "respiratory illness on prolonged exposure" in advice
+
+
+def test_health_advice_all_clear(csv_path):
+    daily = [{**daily_row("2026-09-22", c, "30.0", pm25="10.0"), "pm10_mean": "10"}
+             for c in ("Delhi", "Mumbai")]
+    out = update_readme.update_readme(README, read_rows(csv_path), daily)
+    assert "every city was Good or Satisfactory on India's scale" in out
+
+
+def test_health_advice_absent_without_pm(csv_path):
+    daily = [daily_row("2026-09-22", "Delhi", "30.0", pm25="")]
+    out = update_readme.update_readme(README, read_rows(csv_path), daily)
+    assert "Health (CPCB)" not in out
