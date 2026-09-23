@@ -7,7 +7,17 @@ day and commits the result to this repository. The git history *is* the database
 ## Today's air quality
 
 <!-- AQI:START -->
-_No data collected yet — the first snapshot arrives with the next scheduled run._
+**Latest snapshot: 2026-09-23** (≈08:45 IST · 1 day(s) collected)
+
+| City | US AQI | Category | PM2.5 (µg/m³) | PM10 (µg/m³) | NO₂ (µg/m³) | O₃ (µg/m³) |
+|---|--:|---|--:|--:|--:|--:|
+| Delhi | 179 | 🔴 Unhealthy | 99.7 | 111.3 | 60.2 | 73 |
+| Mumbai | 89 | 🟡 Moderate | 34.7 | 46.7 | 16 | 78 |
+| Bengaluru | 55 | 🟡 Moderate | 16.6 | 22.8 | 14.5 | 64 |
+| Kolkata | 33 | 🟢 Good | 8.4 | 9.2 | 9.2 | 45 |
+| Chennai | 64 | 🟡 Moderate | 14.5 | 16 | 24.7 | 50 |
+
+![US AQI trend by city](charts/aqi_trend.png)
 <!-- AQI:END -->
 
 AQI categories follow the US EPA scale:
