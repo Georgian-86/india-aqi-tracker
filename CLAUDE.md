@@ -71,6 +71,10 @@ Open-Meteo Air Quality API (CAMS data) into
   least `MIN_DAYS` days). **Reports are immutable**: an existing file is never rewritten. The
   index `reports/README.md` (`render_index`, one row per year) is a view, regenerated every
   run. The main README links only the latest `update_readme.RECENT_REPORTS` plus the index. It uses the same India AQI rule as the README (no O₃).
+- `latest_json.py` writes `data/latest.json` (latest snapshot plus latest full day per city,
+  India AQI without O₃, attribution) for other programs. It is the one file in `data/` that
+  is rewritten each run. Keep it deterministic (no generation timestamp) so it only changes
+  with the data. Bump `SCHEMA_VERSION` on any breaking change to its shape.
 - `tests/`: pytest. The fixture `tests/fixtures/open_meteo_response.json` mirrors the real
   multi-location response (a JSON array in coordinate order).
 - `.github/workflows/daily.yml`: cron `17 3 * * *` (08:47 IST), a backup cron `17 6 * * *`

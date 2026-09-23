@@ -115,7 +115,8 @@ Every day at **03:17 UTC (08:47 IST)** the GitHub Actions workflow
    health advice** for any city at Moderate or worse on India's scale, and **last 30 days**
    tables on both scales. If today's snapshot is missing (for example, the fetch failed), a
    ⚠️ warning appears at the top of the section, because the README step runs even when the
-   fetch fails;
+   fetch fails. Then **`latest_json.py`** writes the same latest numbers to
+   [`data/latest.json`](data/latest.json) for other programs (see [Data format](#data-format));
 6. commits `data: AQI snapshot YYYY-MM-DD` and pushes to `main`, but only if something
    actually changed.
 7. runs **`alerts.py`**, which manages **GitHub issues for severe episodes**. It opens one
@@ -180,6 +181,14 @@ reading:
 | `us_aqi_mean`, `us_aqi_max` | mean and peak of the hourly US AQI |
 | `pm2_5_mean`, `pm10_mean` | mean concentration, µg/m³ |
 | `fetched_at_utc` | when it was fetched |
+
+`data/latest.json` is for programs that just want today's numbers. It holds the latest
+snapshot and the latest full day for every city, with categories on both scales, and is
+rewritten on each run (it's the only file in `data/` that isn't append-only). Missing
+values are `null`, and so is the India AQI `index` on a Severe day, since CPCB's scale has
+no number above 500. Check `snapshot.date` to see how fresh it is. The raw URL is
+`https://raw.githubusercontent.com/Georgian-86/india-aqi-tracker/main/data/latest.json`.
+The `schema_version` field is bumped only on breaking changes.
 
 `data/aqi_daily_gases.csv` holds gas statistics for the same days. It's a separate file so
 the append-only `aqi_daily.csv` never needs its header rewritten:
