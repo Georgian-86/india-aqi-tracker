@@ -54,6 +54,10 @@ jobs:
         if: ${{ !cancelled() && steps.tests.outcome == 'success' }}
         run: python make_chart.py
 
+      - name: Monthly reports
+        if: ${{ !cancelled() && steps.tests.outcome == 'success' }}
+        run: python report.py
+
       - name: Update README
         if: ${{ !cancelled() && steps.tests.outcome == 'success' }}
         run: python update_readme.py
@@ -64,6 +68,8 @@ jobs:
           git config user.name "Georgian-86"
           git config user.email "140907660+Georgian-86@users.noreply.github.com"
           git add data/ README.md
+          # reports/ only exists once a month has completed with enough data.
+          if [ -d reports ]; then git add reports/; fi
           if git diff --cached --quiet; then
             echo "No changes to commit."
             exit 0

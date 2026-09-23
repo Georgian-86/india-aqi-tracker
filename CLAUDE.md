@@ -48,6 +48,9 @@ Open-Meteo Air Quality API (CAMS data) into
   is the source of truth for which days were reported (no double posts, no reopen for a
   reported day). Without `GITHUB_TOKEN`/`GITHUB_REPOSITORY` it does a dry run. The
   workflow needs `issues: write`.
+- `report.py` writes `reports/YYYY-MM.md` for each completed month (last day present and at
+  least `MIN_DAYS` days). **Reports are immutable**: an existing file is never rewritten. The
+  README links them (`report_months`). It uses the same India AQI rule as the README (no O₃).
 - `tests/`: pytest. The fixture `tests/fixtures/open_meteo_response.json` mirrors the real
   multi-location response (a JSON array in coordinate order).
 - `.github/workflows/daily.yml`: cron `17 3 * * *` (08:47 IST), a backup cron `17 6 * * *`

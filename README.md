@@ -70,6 +70,8 @@ Pune and Ahmedabad**, once a day and commits the result to this repository. The 
 | Ahmedabad | 25 | 5 | · | · | · | · | PM10 19 · PM2.5 8 · NO₂ 3 |
 
 ![US AQI trend by city](https://raw.githubusercontent.com/Georgian-86/india-aqi-tracker/charts/aqi_trend.png)
+
+**Monthly reports:** [Aug 2026](reports/2026-08.md) · [Jul 2026](reports/2026-07.md)
 <!-- AQI:END -->
 
 AQI categories follow the US EPA scale:
@@ -102,15 +104,19 @@ Every day at **03:17 UTC (08:47 IST)** the GitHub Actions workflow
    full-day data exists yet. If a rare extreme (such as a dust storm pushing Delhi past 600)
    would squash the other lines, the y-axis is capped at max(300, 95th percentile × 1.15).
    Clipped runs are marked ▲ with their peak value;
-4. runs **`update_readme.py`** to rewrite the section between the `AQI:START` / `AQI:END`
+4. runs **`report.py`**, which writes a **monthly report** to [`reports/`](reports/) once a
+   month completes (a city ranking, days per India AQI category, and the main pollutants).
+   Reports are written once and never rewritten, like the CSVs. Months with fewer than 20
+   days of data are skipped;
+5. runs **`update_readme.py`** to rewrite the section between the `AQI:START` / `AQI:END`
    markers above: the latest snapshot, the latest full day with a 7-day mean and **CPCB
    health advice** for any city at Moderate or worse on India's scale, and **last 30 days**
    tables on both scales. If today's snapshot is missing (for example, the fetch failed), a
    ⚠️ warning appears at the top of the section, because the README step runs even when the
    fetch fails;
-5. commits `data: AQI snapshot YYYY-MM-DD` and pushes to `main`, but only if something
+6. commits `data: AQI snapshot YYYY-MM-DD` and pushes to `main`, but only if something
    actually changed.
-6. runs **`alerts.py`**, which manages **GitHub issues for severe episodes**. It opens one
+7. runs **`alerts.py`**, which manages **GitHub issues for severe episodes**. It opens one
    (label `aqi-alert`) when a city's full-day mean reaches **Very Unhealthy (≥ 201)**,
    comments once per day while it lasts, and closes it once the mean drops **below 151**.
    The gap between the two thresholds keeps an issue from flapping open and closed. Replayed
