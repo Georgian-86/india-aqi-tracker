@@ -14,7 +14,10 @@ Bengaluru, Kolkata and Chennai from the Open-Meteo Air Quality API (CAMS data) i
   on `(date, city)`. `--past-days N` (1–92, workflow input `past_days`) computes stats for
   the last N complete days. That's the backfill path, and the same code the daily run uses
   with N=1.
-- `make_chart.py` renders `charts/aqi_trend.png` (matplotlib, `Agg` backend). It plots
+- `make_chart.py` renders `charts/aqi_trend.png` (matplotlib, `Agg` backend; `charts/` is
+  git-ignored). The workflow publishes it as the only commit on the `charts` branch
+  (force-pushed via `hash-object`/`mktree`/`commit-tree`). The README embeds it from
+  `update_readme.CHART_URL`. Never commit chart images to main. It plots
   `us_aqi_mean` from `aqi_daily.csv`, falling back to snapshot `us_aqi` only if there's no
   daily data. `y_limit()` caps the axis at max(300, p95 × 1.15) when rare extremes would
   squash the other lines. `peaks_above()` labels one peak per clipped run.
@@ -74,7 +77,7 @@ Bengaluru, Kolkata and Chennai from the Open-Meteo Air Quality API (CAMS data) i
   gets a minimum 7-day x-window. Markers are dropped past 60 points per series.
 - **Adding a city:** append it to `CITIES` in `common.py`, add a colour in
   `make_chart.CITY_COLORS`, add an entry to the test fixture, and update the README intro.
-- Generated files (`data/`, `charts/`, the README AQI section) are written by the workflow.
+- Generated files (`data/`, the chart, the README AQI section) are written by the workflow.
   Don't hand-edit them.
 - Keep the Attribution section in README (CAMS + Open-Meteo, CC BY 4.0). It's a licence
   requirement.

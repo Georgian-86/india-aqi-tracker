@@ -21,7 +21,11 @@ from common import (
 
 START = "<!-- AQI:START -->"
 END = "<!-- AQI:END -->"
-CHART_REL = "charts/aqi_trend.png"
+# The chart lives on its own single-commit `charts` branch (force-pushed by the
+# workflow) so a new image every day doesn't pile up in main's history.
+CHART_URL = (
+    "https://raw.githubusercontent.com/Georgian-86/india-aqi-tracker/charts/aqi_trend.png"
+)
 
 CATEGORY_ICON = {
     "Good": "🟢",
@@ -211,7 +215,7 @@ def render_section(
     ]
     lines += render_daily(daily_rows or [])
     lines += render_summary(daily_rows or [])
-    lines += ["", f"![US AQI trend by city]({CHART_REL})"]
+    lines += ["", f"![US AQI trend by city]({CHART_URL})"]
     return f"{START}\n" + "\n".join(lines) + f"\n{END}"
 
 
