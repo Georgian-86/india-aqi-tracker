@@ -5,7 +5,7 @@ import pytest
 import requests
 
 import fetch
-from common import CITIES, COLUMNS
+from common import CITIES, COLUMNS, DAILY_COLUMNS
 from conftest import FakeSession, make_response
 
 FETCHED_AT = "2026-09-23T03:17:00Z"
@@ -13,9 +13,16 @@ FETCHED_AT = "2026-09-23T03:17:00Z"
 NOW = datetime(2026, 9, 23, 3, 17, tzinfo=timezone.utc)
 
 
-def run_main(path, outcomes, now=NOW):
+def run_main(path, outcomes, now=NOW, daily_path=None):
     session = FakeSession(outcomes)
-    return fetch.main(csv_path=path, session=session, sleep=lambda s: None, now=now)
+    daily_path = daily_path or path.with_name("aqi_daily.csv")
+    return fetch.main(
+        csv_path=path,
+        daily_csv_path=daily_path,
+        session=session,
+        sleep=lambda s: None,
+        now=now,
+    )
 
 
 def read_csv(path):
@@ -28,6 +35,8 @@ def test_build_params_single_request_for_all_cities():
     assert params["latitude"].split(",") == [str(lat) for _, lat, _ in CITIES]
     assert params["longitude"].split(",") == [str(lon) for _, _, lon in CITIES]
     assert params["current"] == "us_aqi,pm2_5,pm10,nitrogen_dioxide,ozone"
+    assert params["hourly"] == "us_aqi,pm2_5,pm10"
+    assert (params["past_days"], params["forecast_days"]) == ("1", "1")
     assert params["timezone"] == "Asia/Kolkata"
 
 
@@ -186,3 +195,61 @@ def test_main_missing_aqi_stores_others_then_backfills(tmp_path, payload):
     rows = read_csv(path)[1:]
     assert len(rows) == 5
     assert rows[-1][:3] == ["2026-09-23", "Kolkata", "121"]
+
+
+def test_parse_daily_uses_previous_ist_day_only(payload):
+    rows, skipped = fetch.parse_daily(payload, FETCHED_AT)
+    assert skipped == []
+    assert [r["city"] for r in rows] == [c for c, _, _ in CITIES]
+    delhi = rows[0]
+    hourly = payload[0]["hourly"]
+    yesterday = hourly["us_aqi"][:24]  # fixture hours 0-23 are 2026-09-22
+    assert delhi["date"] == "2026-09-22"
+    assert delhi["hours"] == "24"
+    assert delhi["us_aqi_mean"] == f"{sum(yesterday) / 24:.1f}"
+    assert delhi["us_aqi_max"] == str(max(yesterday))
+    assert delhi["pm2_5_mean"] == f"{sum(hourly['pm2_5'][:24]) / 24:.1f}"
+    # Today's (partly forecast) hours must not leak into yesterday's stats.
+    hourly["us_aqi"][30] = 9999
+    assert fetch.parse_daily(payload, FETCHED_AT)[0][0]["us_aqi_max"] == str(max(yesterday))
+
+
+def test_parse_daily_tolerates_a_few_missing_hours(payload):
+    for i in (1, 2, 3):
+        payload[1]["hourly"]["us_aqi"][i] = None
+    rows, skipped = fetch.parse_daily(payload, FETCHED_AT)
+    assert skipped == []
+    assert rows[1]["hours"] == "21"
+
+
+def test_parse_daily_skips_city_with_too_few_hours(payload):
+    for i in range(24 - fetch.MIN_DAILY_HOURS + 1):
+        payload[4]["hourly"]["us_aqi"][i] = None
+    rows, skipped = fetch.parse_daily(payload, FETCHED_AT)
+    assert skipped == ["Chennai"]
+    assert len(rows) == 4
+
+
+def test_parse_daily_without_hourly_block_skips_all(payload):
+    for loc in payload:
+        del loc["hourly"]
+    rows, skipped = fetch.parse_daily(payload, FETCHED_AT)
+    assert rows == [] and len(skipped) == 5
+
+
+def test_main_writes_daily_csv_and_dedupes(tmp_path, payload):
+    path, daily = tmp_path / "aqi.csv", tmp_path / "aqi_daily.csv"
+    assert run_main(path, [make_response(200, payload)], daily_path=daily) == 0
+    assert run_main(path, [make_response(200, payload)], daily_path=daily) == 0
+    lines = read_csv(daily)
+    assert lines[0] == DAILY_COLUMNS
+    assert len(lines) == 6
+    assert {line[0] for line in lines[1:]} == {"2026-09-22"}
+
+
+def test_main_fails_but_keeps_snapshot_when_hourly_missing(tmp_path, payload):
+    path, daily = tmp_path / "aqi.csv", tmp_path / "aqi_daily.csv"
+    del payload[2]["hourly"]  # Bengaluru
+    assert run_main(path, [make_response(200, payload)], daily_path=daily) == 1
+    assert len(read_csv(path)) == 6  # snapshot fully stored
+    assert "Bengaluru" not in [line[1] for line in read_csv(daily)]

@@ -8,6 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 CSV_PATH = ROOT / "data" / "aqi.csv"
+DAILY_CSV_PATH = ROOT / "data" / "aqi_daily.csv"
 CHART_PATH = ROOT / "charts" / "aqi_trend.png"
 README_PATH = ROOT / "README.md"
 
@@ -24,6 +25,11 @@ CITIES: list[tuple[str, float, float]] = [
 ]
 
 COLUMNS = ["date", "city", "us_aqi", "pm2_5", "pm10", "no2", "o3", "fetched_at_utc"]
+# Full-day statistics for a completed IST day, computed from hourly data.
+DAILY_COLUMNS = [
+    "date", "city", "hours", "us_aqi_mean", "us_aqi_max", "pm2_5_mean", "pm10_mean",
+    "fetched_at_utc",
+]
 
 # US EPA AQI breakpoints: (upper bound inclusive, label).
 AQI_CATEGORIES: list[tuple[int, str]] = [
