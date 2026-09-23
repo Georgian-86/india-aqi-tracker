@@ -2,7 +2,10 @@ name: Daily AQI snapshot
 
 on:
   schedule:
-    - cron: "17 3 * * *" # 08:47 IST
+    - cron: "17 3 * * *" # 08:47 IST — the daily snapshot
+    # Backup: a no-op if the morning run stored all cities (rows are deduped
+    # on date+city); otherwise fills the gap left by a dropped/failed run.
+    - cron: "17 6 * * *" # 11:47 IST
   workflow_dispatch:
 
 permissions:
@@ -17,9 +20,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
           cache: pip
@@ -28,18 +31,26 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Run tests
+        id: tests
         run: pytest -q
 
       - name: Fetch AQI
+        id: fetch
         run: python fetch.py
 
+      # The steps below also run when fetch.py failed part-way (e.g. one city
+      # returned no AQI): whatever rows it did store still get committed.
+      # The last step then turns the job red.
       - name: Draw chart
+        if: ${{ !cancelled() && steps.tests.outcome == 'success' }}
         run: python make_chart.py
 
       - name: Update README
+        if: ${{ !cancelled() && steps.tests.outcome == 'success' }}
         run: python update_readme.py
 
       - name: Commit and push if changed
+        if: ${{ !cancelled() && steps.tests.outcome == 'success' }}
         run: |
           git config user.name "Georgian-86"
           git config user.email "140907660+Georgian-86@users.noreply.github.com"
@@ -51,3 +62,9 @@ jobs:
           git commit -m "data: AQI snapshot $(TZ=Asia/Kolkata date +%F)"
           git pull --rebase origin main
           git push origin HEAD:main
+
+      - name: Fail if fetch failed
+        if: ${{ !cancelled() && steps.fetch.outcome == 'failure' }}
+        run: |
+          echo "::error::fetch.py failed; see the 'Fetch AQI' step. Any rows it stored were committed."
+          exit 1

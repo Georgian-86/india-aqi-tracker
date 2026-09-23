@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import sys
 from collections import defaultdict
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
 import matplotlib
@@ -28,6 +28,8 @@ TEXT_PRIMARY = "#0b0b0b"
 TEXT_SECONDARY = "#52514e"
 GRID = "#e4e3df"
 BAND = "#f1f0ec"
+MIN_WINDOW_DAYS = 7  # a zero-width date axis renders garbage ticks
+MAX_MARKER_POINTS = 60  # beyond this, markers just clutter the lines
 
 
 def load_series(csv_path: Path) -> dict[str, list[tuple[date, float]]]:
@@ -76,10 +78,16 @@ def render(csv_path: Path = CSV_PATH, out_path: Path = CHART_PATH) -> Path:
             if not pts:
                 continue
             xs, ys = zip(*pts)
+            marker = "o" if len(pts) <= MAX_MARKER_POINTS else None
             ax.plot(xs, ys, label=city, color=CITY_COLORS[city], lw=2,
-                    marker="o", markersize=5, markeredgecolor=SURFACE,
+                    marker=marker, markersize=6, markeredgecolor=SURFACE,
                     markeredgewidth=1.5, zorder=3)
 
+        first = min(d for pts in series.values() for d, _ in pts)
+        last = max(d for pts in series.values() for d, _ in pts)
+        first = min(first, last - timedelta(days=MIN_WINDOW_DAYS - 1))
+        # Half a day of padding each side (date objects can't hold hours).
+        ax.set_xlim(mdates.date2num(first) - 0.5, mdates.date2num(last) + 0.5)
         ax.set_ylim(0, top)
         ax.grid(axis="y", color=GRID, lw=0.8, zorder=1)
         for side in ("top", "right", "left"):
@@ -89,13 +97,13 @@ def render(csv_path: Path = CSV_PATH, out_path: Path = CHART_PATH) -> Path:
         ax.xaxis.set_major_locator(mdates.AutoDateLocator(minticks=3, maxticks=10))
         ax.xaxis.set_major_formatter(mdates.DateFormatter("%d %b"))
         ax.set_ylabel("US AQI", color=TEXT_SECONDARY)
-        ax.legend(loc="upper left", bbox_to_anchor=(0, 1.02), ncol=len(CITIES),
+        ax.legend(loc="lower left", bbox_to_anchor=(0, 1.01), ncol=len(CITIES),
                   frameon=False, fontsize=9, labelcolor=TEXT_PRIMARY,
                   borderaxespad=0, handlelength=1.5)
 
     ax.set_title("Daily US AQI — Indian metros", loc="left", color=TEXT_PRIMARY,
                  fontsize=13, pad=26)
-    fig.text(0.01, 0.01, "Source: CAMS / Open-Meteo (snapshot ~08:45 IST)",
+    fig.text(0.01, 0.01, "Source: CAMS via Open-Meteo (CC BY 4.0) · one model reading per day",
              color=TEXT_SECONDARY, fontsize=7.5)
     fig.tight_layout()
     fig.savefig(out_path, facecolor=SURFACE)

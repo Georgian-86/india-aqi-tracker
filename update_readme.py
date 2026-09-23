@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import re
 import sys
+from datetime import datetime
 from pathlib import Path
 
-from common import CITIES, CSV_PATH, README_PATH, aqi_category, read_rows
+from common import CITIES, CSV_PATH, IST, README_PATH, aqi_category, read_rows
 
 START = "<!-- AQI:START -->"
 END = "<!-- AQI:END -->"
@@ -30,6 +31,19 @@ def _num(value: str) -> str:
     return str(int(f)) if f.is_integer() else f"{f:.1f}"
 
 
+def _fetched_ist(rows: list[dict[str, str]]) -> str | None:
+    """Latest fetched_at_utc among rows, as 'HH:MM IST' (None if unparseable)."""
+    stamps = []
+    for r in rows:
+        try:
+            stamps.append(datetime.fromisoformat(r["fetched_at_utc"].replace("Z", "+00:00")))
+        except (KeyError, ValueError):
+            continue
+    if not stamps:
+        return None
+    return f"{max(stamps).astimezone(IST):%H:%M} IST"
+
+
 def render_section(rows: list[dict[str, str]]) -> str:
     if not rows:
         body = "_No data collected yet — the first snapshot arrives with the next scheduled run._"
@@ -38,9 +52,12 @@ def render_section(rows: list[dict[str, str]]) -> str:
     latest = max(r["date"] for r in rows)
     today = {r["city"]: r for r in rows if r["date"] == latest}
     days = len({r["date"] for r in rows})
+    fetched = _fetched_ist(list(today.values()))
+    details = [f"fetched {fetched}"] if fetched else []
+    details.append(f"{days} day{'s' if days != 1 else ''} collected")
 
     lines = [
-        f"**Latest snapshot: {latest}** (≈08:45 IST · {days} day(s) collected)",
+        f"**Latest snapshot: {latest}** ({' · '.join(details)})",
         "",
         "| City | US AQI | Category | PM2.5 (µg/m³) | PM10 (µg/m³) | NO₂ (µg/m³) | O₃ (µg/m³) |",
         "|---|--:|---|--:|--:|--:|--:|",
