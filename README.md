@@ -32,6 +32,16 @@ day and commits the result to this repository. The git history *is* the database
 | Kolkata | 64 | 🟡 Moderate | 72 | 104 | 10.1 |
 | Chennai | 73 | 🟡 Moderate | 84 | 93 | 17 |
 
+**Last 30 days** (2026-08-24 to 2026-09-22, full-day means · 30 days of data): days in each category
+
+| City | 🟢 Good | 🟡 Moderate | 🟠 USG | 🔴 Unhealthy | 🟣 V. Unhealthy | 🟤 Hazardous | Mean | Worst day |
+|---|--:|--:|--:|--:|--:|--:|--:|---|
+| Delhi | · | 5 | 7 | 14 | 2 | 2 | 162 | 352 on 2026-08-29 |
+| Mumbai | · | 29 | 1 | · | · | · | 63 | 110 on 2026-09-21 |
+| Bengaluru | 13 | 17 | · | · | · | · | 52 | 80 on 2026-09-15 |
+| Kolkata | 1 | 20 | 8 | 1 | · | · | 87 | 164 on 2026-09-19 |
+| Chennai | · | 29 | 1 | · | · | · | 77 | 108 on 2026-09-17 |
+
 ![US AQI trend by city](charts/aqi_trend.png)
 <!-- AQI:END -->
 
@@ -60,9 +70,12 @@ Every day at **03:17 UTC (08:47 IST)** the GitHub Actions workflow
    a city has no AQI value. In the last case the other cities are still saved;
 3. runs **`make_chart.py`** to redraw [`charts/aqi_trend.png`](charts/aqi_trend.png). The
    chart plots the full-day mean AQI, falling back to the single snapshot only when no
-   full-day data exists yet;
+   full-day data exists yet. If a rare extreme (such as a dust storm pushing Delhi past 600)
+   would squash the other lines, the y-axis is capped at max(300, 95th percentile × 1.15).
+   Clipped runs are marked ▲ with their peak value;
 4. runs **`update_readme.py`** to rewrite the section between the `AQI:START` / `AQI:END`
-   markers above;
+   markers above: the latest snapshot, the latest full day with a 7-day mean, and a
+   **last 30 days** table (days per EPA category, mean, and worst day per city);
 5. commits `data: AQI snapshot YYYY-MM-DD` and pushes to `main`, but only if something
    actually changed.
 
@@ -123,6 +136,8 @@ reading:
   winter it's usually worst in the early morning), so snapshots are only comparable across
   days when taken at a similar time. That's why the README's "vs prev." column only compares
   readings taken within 3 hours of the same time of day. For trends, use `aqi_daily.csv`.
+- Open-Meteo extends US AQI above 500, the official top of the scale ("Beyond the AQI"), so
+  dust-storm days can show values like 620. They're still categorised as Hazardous.
 - `us_aqi_mean` is the mean of Open-Meteo's hourly US AQI values. This is not the same as
   the EPA's official daily AQI, which is computed from 24-hour mean concentrations.
 

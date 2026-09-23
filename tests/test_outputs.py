@@ -1,5 +1,7 @@
 """Tests for the README updater and chart renderer."""
 
+from datetime import date
+
 import pytest
 
 import fetch
@@ -177,3 +179,66 @@ def test_change_shown_across_midnight_within_window():
     prev = {"us_aqi": "100", "fetched_at_utc": "2026-09-22T18:00:00Z"}  # 23:30 IST
     cur = {"us_aqi": "90", "fetched_at_utc": "2026-09-23T19:00:00Z"}  # 00:30 IST
     assert update_readme._change(cur, prev) == "▼ 10"
+
+
+def test_summary_counts_days_per_category(csv_path):
+    means = ["45.0", "60.0", "120.0", "160.0", "160.0", "250.0", "320.0"]
+    daily = [daily_row(f"2026-09-{16 + i}", "Delhi", m) for i, m in enumerate(means)]
+    daily.append(daily_row("2026-09-22", "Chennai", "30.0"))
+    out = update_readme.update_readme(README, read_rows(csv_path), daily)
+    assert "**Last 30 days** (2026-08-24 to 2026-09-22, full-day means · 7 days of data)" in out
+    #        Good Mod USG Unh VU Haz | mean = 1115/7 = 159.3 | worst
+    assert "| Delhi | 1 | 1 | 1 | 2 | 1 | 1 | 159 | 320 on 2026-09-22 |" in out
+    assert "| Chennai | 1 | · | · | · | · | · | 30 | 30 on 2026-09-22 |" in out
+    assert out.index("Last 30 days") < out.index("![US AQI trend")
+
+
+def test_summary_window_is_30_days(csv_path):
+    daily = [daily_row("2026-08-23", "Delhi", "400.0")]  # 31 days before the end: excluded
+    daily += [daily_row("2026-08-24", "Delhi", "100.0"), daily_row("2026-09-22", "Delhi", "50.0")]
+    out = update_readme.update_readme(README, read_rows(csv_path), daily)
+    assert "| Delhi | 1 | 1 | · | · | · | · | 75 | 100 on 2026-08-24 |" in out
+
+
+def test_summary_omitted_with_single_day(csv_path):
+    out = update_readme.update_readme(
+        README, read_rows(csv_path), [daily_row("2026-09-22", "Delhi", "100.0")]
+    )
+    assert "Last 30 days" not in out
+
+
+def test_y_limit_no_clipping_for_normal_range():
+    top, clipped = make_chart.y_limit([40.0, 90.0, 180.0])
+    assert not clipped and top == pytest.approx(198.0)
+
+
+def test_y_limit_small_values_floor_at_100():
+    assert make_chart.y_limit([20.0, 30.0]) == (100, False)
+
+
+def test_y_limit_clips_rare_extremes():
+    values = [100.0] * 95 + [620.0] * 5  # 5% dust-storm days
+    top, clipped = make_chart.y_limit(values)
+    assert clipped and top == make_chart.MIN_Y_CAP
+
+
+def test_y_limit_follows_sustained_high_levels():
+    # A Delhi winter: most days 300-450, so the cap rises instead of clipping it all.
+    values = [300.0 + i for i in range(150)]
+    top, clipped = make_chart.y_limit(values)
+    assert not clipped and top == pytest.approx(449 * 1.1)
+
+
+def test_peaks_above_one_label_per_run():
+    d = [date(2026, 7, i) for i in range(1, 9)]
+    pts = list(zip(d, [100, 400, 610, 500, 100, 350, 90, 320]))
+    assert make_chart.peaks_above(pts, 300) == [(d[2], 610), (d[5], 350), (d[7], 320)]
+
+
+def test_chart_with_outliers_renders(tmp_path):
+    daily = tmp_path / "d.csv"
+    rows = [daily_row(f"2026-07-{i:02d}", c, str(v)) for i in range(1, 31)
+            for c, v in [("Delhi", 620.0 if i in (10, 11) else 150.0), ("Mumbai", 60.0)]]
+    fetch.append_rows(daily, rows, fetch.DAILY_COLUMNS)
+    out = make_chart.render(tmp_path / "none.csv", tmp_path / "c.png", daily)
+    assert out.stat().st_size > 0

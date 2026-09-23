@@ -16,10 +16,12 @@ Bengaluru, Kolkata and Chennai from the Open-Meteo Air Quality API (CAMS data) i
   with N=1.
 - `make_chart.py` renders `charts/aqi_trend.png` (matplotlib, `Agg` backend). It plots
   `us_aqi_mean` from `aqi_daily.csv`, falling back to snapshot `us_aqi` only if there's no
-  daily data.
+  daily data. `y_limit()` caps the axis at max(300, p95 × 1.15) when rare extremes would
+  squash the other lines. `peaks_above()` labels one peak per clipped run.
 - `update_readme.py` replaces the text between `<!-- AQI:START -->` and `<!-- AQI:END -->`
   with a snapshot table ("vs prev." is only shown when readings are within 3 h of the same
-  time of day) and a full-day table with a 7-day mean.
+  time of day), a full-day table with a 7-day mean, and a last-30-days table (`render_summary`:
+  days per category, mean, worst day). The 30-day table is omitted with fewer than 2 days.
 - `tests/`: pytest. The fixture `tests/fixtures/open_meteo_response.json` mirrors the real
   multi-location response (a JSON array in coordinate order).
 - `.github/workflows/daily.yml`: cron `17 3 * * *` (08:47 IST), a backup cron `17 6 * * *`
