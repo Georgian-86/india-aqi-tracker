@@ -84,6 +84,7 @@ def fetch_payload(
     sleep=time.sleep,
     past_days: int = 1,
     params: dict[str, str] | None = None,
+    timeout: float = TIMEOUT_SECONDS,
 ) -> list[dict]:
     """GET the API with exponential backoff on network errors and 429/5xx.
 
@@ -94,7 +95,7 @@ def fetch_payload(
 
     for attempt in range(1, max_attempts + 1):
         try:
-            resp = session.get(API_URL, params=params, timeout=TIMEOUT_SECONDS)
+            resp = session.get(API_URL, params=params, timeout=timeout)
             if resp.status_code in RETRYABLE_STATUS:
                 raise FetchError(f"HTTP {resp.status_code}: {resp.text[:200]}")
             if resp.status_code != 200:

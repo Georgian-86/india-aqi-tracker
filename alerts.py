@@ -2,9 +2,16 @@
 
 Based on the latest full-day mean in data/aqi_daily.csv, per city:
 
-- mean >= ALERT_AQI (Very Unhealthy) and no open alert  -> open an issue
-- an alert is open and the day hasn't been reported     -> comment once
-- mean <  CLEAR_AQI (below Unhealthy) and alert is open  -> comment, close
+- mean >= ALERT_AQI (Hazardous) for MIN_STREAK days, none open -> open an issue
+- an alert is open and the day hasn't been reported          -> comment once
+- mean <  CLEAR_AQI (below Very Unhealthy) and alert is open  -> comment, close
+
+Thresholds were chosen by replaying 572 days of real data (Feb 2025 -
+Sep 2026). The first version (open at 201, close at 151, from one monsoon)
+would have kept Delhi's issue open 53% of the time and Kolkata's for 108
+days straight. With 301 / 3 days / 201 it's ~7 issues a year, open ~11% of
+the time, median episode 3 days: alerts for exceptional episodes, not for
+Delhi's normal.
 
 Opening and closing at different thresholds (hysteresis) stops an issue
 flapping open/closed when a city hovers around one line. Every post carries
@@ -28,8 +35,9 @@ import requests
 
 from common import CITIES, DAILY_CSV_PATH, aqi_category, read_rows
 
-ALERT_AQI = 201  # start of "Very Unhealthy"
-CLEAR_AQI = 151  # start of "Unhealthy"; close only once below it
+ALERT_AQI = 301  # start of "Hazardous"
+MIN_STREAK = 3  # consecutive days at or above ALERT_AQI before opening
+CLEAR_AQI = 201  # start of "Very Unhealthy"; close only once below it
 LABEL = "aqi-alert"
 API = "https://api.github.com"
 TIMEOUT_SECONDS = 30
@@ -118,14 +126,18 @@ def plan(
         number, issue_body = open_issues.get(day.city, (None, ""))
         markers = city_marker(day.city) + date_marker(day.date)
         if number is None:
-            if day.mean >= ALERT_AQI and day.date not in closed_dates.get(day.city, set()):
-                days_txt = f" for {day.streak} days running" if day.streak > 1 else ""
+            if (
+                day.mean >= ALERT_AQI
+                and day.streak >= MIN_STREAK
+                and day.date not in closed_dates.get(day.city, set())
+            ):
+                days_txt = f" for {day.streak} days running"
                 actions.append(Action(
                     "open", day.city,
                     title=f"AQI alert: {day.city} is {aqi_category(day.mean)} ({day.date})",
                     body=(
                         f"{_describe(day)}\n\nAir quality has been at or above "
-                        f"Very Unhealthy ({ALERT_AQI}){days_txt}. This issue gets a "
+                        f"{aqi_category(ALERT_AQI)} ({ALERT_AQI}){days_txt}. This issue gets a "
                         f"comment each day and closes automatically once the daily "
                         f"mean drops below {CLEAR_AQI}.{footer}{markers}"
                     ),
@@ -137,7 +149,7 @@ def plan(
         if day.mean < CLEAR_AQI:
             actions.append(Action(
                 "close", day.city, issue=number, new_issue_body=new_issue_body,
-                body=f"{_describe(day)}\n\nBack below Unhealthy ({CLEAR_AQI}); "
+                body=f"{_describe(day)}\n\nBack below {aqi_category(CLEAR_AQI)} ({CLEAR_AQI}); "
                      f"closing.{footer}{markers}",
             ))
         else:

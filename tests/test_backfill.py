@@ -135,3 +135,45 @@ def test_backfill_rejects_misordered_response(tmp_path, payload):
 def test_cli_requires_valid_since(argv):
     with pytest.raises(SystemExit):
         backfill.cli(argv)
+
+
+def timeouts(n=backfill.BACKFILL_ATTEMPTS):
+    return [requests.Timeout("Read timed out.")] * n
+
+
+def test_backfill_splits_a_range_that_times_out(tmp_path, payload):
+    since, until = date(2026, 3, 1), date(2026, 3, 20)  # 20 days: one chunk
+    newer, older = (date(2026, 3, 11), until), (since, date(2026, 3, 10))
+    code, session = run(tmp_path, [
+        *timeouts(),  # the 20-day range keeps timing out...
+        make_response(200, history_payload(payload, *newer)),  # ...its halves don't
+        make_response(200, history_payload(payload, *older)),
+    ], since, until)
+    assert code == 0
+    ranges = [(c["params"]["start_date"], c["params"]["end_date"]) for c in session.calls]
+    assert ranges[-2:] == [("2026-03-11", "2026-03-20"), ("2026-03-01", "2026-03-10")]
+    assert len(read_csv(tmp_path / "daily.csv")) - 1 == 20 * N  # nothing lost
+    assert all(c["timeout"] == backfill.BACKFILL_TIMEOUT_SECONDS for c in session.calls)
+
+
+def test_backfill_gives_up_when_smallest_range_times_out(tmp_path, capsys):
+    day = date(2026, 3, 1)
+    until = day + timedelta(days=backfill.MIN_CHUNK_DAYS - 1)  # already the minimum
+    code, session = run(tmp_path, timeouts(), since=day, until=until)
+    assert code == 1
+    assert len(session.calls) == backfill.BACKFILL_ATTEMPTS  # no further splitting
+    assert "timed out" in capsys.readouterr().err
+
+
+def test_backfill_keeps_earlier_ranges_when_a_later_one_fails(tmp_path, payload):
+    # Mirrors the first real run: recent ranges succeed, an older one fails.
+    since, until = date(2025, 12, 1), date(2026, 3, 1)  # 91 days: two chunks
+    [(s1, e1), _] = backfill.chunks(since, until)
+    code, _ = run(tmp_path, [
+        make_response(200, history_payload(payload, s1, e1)),
+        # older range: split repeatedly down to the minimum, every attempt timing out
+        *timeouts(100),
+    ], since, until)
+    assert code == 1
+    rows = read_csv(tmp_path / "daily.csv")
+    assert len(rows) - 1 == ((e1 - s1).days + 1) * N  # the successful range was kept

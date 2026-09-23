@@ -32,6 +32,12 @@ from common import (
 )
 
 CHUNK_DAYS = 60  # 8 cities x 60 days x 24 h x 5 variables per request
+# Older archive data can be much slower to serve. The first real backfill got
+# 4 read timeouts in a row on a 60-day range, so a range that keeps timing out
+# is split in half (down to MIN_CHUNK_DAYS) rather than failing the run.
+MIN_CHUNK_DAYS = 7
+BACKFILL_TIMEOUT_SECONDS = 60
+BACKFILL_ATTEMPTS = 2  # per range; splitting is the main recovery
 
 
 def chunks(since: date, until: date, size: int = CHUNK_DAYS) -> list[tuple[date, date]]:
@@ -102,10 +108,13 @@ def main(
     earliest = None
     total_daily = total_gas = 0
 
-    for start, end in chunks(since, until):
+    pending = chunks(since, until)  # newest first
+    while pending:
+        start, end = pending.pop(0)
         try:
             payload = fetch.fetch_payload(
-                session=session, sleep=sleep, params=chunk_params(start, end)
+                session=session, sleep=sleep, params=chunk_params(start, end),
+                timeout=BACKFILL_TIMEOUT_SECONDS, max_attempts=BACKFILL_ATTEMPTS,
             )
             rows, missing = parse_chunk(payload, start, end, fetched_at)
         except requests.HTTPError as exc:
@@ -115,7 +124,16 @@ def main(
                 break
             print(f"ERROR: {exc}", file=sys.stderr)
             return 1
-        except (requests.RequestException, fetch.FetchError, ValueError) as exc:
+        except fetch.FetchError as exc:
+            days = (end - start).days + 1
+            if "timed out" in str(exc) and days > MIN_CHUNK_DAYS:
+                middle = start + timedelta(days=days // 2)
+                print(f"{start}..{end}: timed out; retrying as two smaller ranges.")
+                pending[:0] = [(middle, end), (start, middle - timedelta(days=1))]
+                continue
+            print(f"ERROR: {exc}", file=sys.stderr)
+            return 1
+        except (requests.RequestException, ValueError) as exc:
             print(f"ERROR: {exc}", file=sys.stderr)
             return 1
 
