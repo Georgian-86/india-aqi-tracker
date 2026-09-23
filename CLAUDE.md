@@ -11,8 +11,12 @@ Bengaluru, Kolkata and Chennai from the Open-Meteo Air Quality API (CAMS data) i
 - `fetch.py` makes one API call for all cities (`current` plus `hourly` with
   `past_days=1&forecast_days=1`). It appends the snapshot to `data/aqi.csv` and yesterday's
   full-day stats (`parse_daily`) to `data/aqi_daily.csv` (`DAILY_COLUMNS`). Both are deduped
-  on `(date, city)`.
-- `make_chart.py` renders `charts/aqi_trend.png` (matplotlib, `Agg` backend).
+  on `(date, city)`. `--past-days N` (1–92, workflow input `past_days`) computes stats for
+  the last N complete days. That's the backfill path, and the same code the daily run uses
+  with N=1.
+- `make_chart.py` renders `charts/aqi_trend.png` (matplotlib, `Agg` backend). It plots
+  `us_aqi_mean` from `aqi_daily.csv`, falling back to snapshot `us_aqi` only if there's no
+  daily data.
 - `update_readme.py` replaces the text between `<!-- AQI:START -->` and `<!-- AQI:END -->`
   with a snapshot table ("vs prev." is only shown when readings are within 3 h of the same
   time of day) and a full-day table with a 7-day mean.
@@ -22,6 +26,10 @@ Bengaluru, Kolkata and Chennai from the Open-Meteo Air Quality API (CAMS data) i
   (11:47 IST), and manual dispatch. Chart, README and commit steps still run when `fetch.py`
   fails, so partial data is kept. A final step then turns the job red.
 - `.github/workflows/ci.yml`: `ruff check .` and `pytest` on PRs and pushes to main.
+- Actions are pinned to full commit SHAs with a `# vX.Y.Z` comment, and Dependabot keeps
+  both up to date. When pinning by hand, resolve with
+  `git ls-remote --tags https://github.com/actions/<name>` and use the `^{}` (peeled) SHA
+  if the tag is annotated.
 - `.github/dependabot.yml`: monthly pip and Actions updates.
 
 ## Conventions
@@ -34,7 +42,8 @@ Bengaluru, Kolkata and Chennai from the Open-Meteo Air Quality API (CAMS data) i
   (`timezone=Asia/Kolkata`), never the runner's local clock. `fetched_at_utc` is
   `YYYY-MM-DDTHH:MM:SSZ`. Use `common.IST` for IST conversions. Never hard-code a snapshot
   time in output; derive it from `fetched_at_utc`.
-- **CSV is append-only.** Never rewrite or reorder historical rows. `(date, city)` is the
+- **CSV is append-only.** Never rewrite or reorder historical rows. Row order is insertion
+  order (a backfill appends older dates last), so always sort by date when reading. `(date, city)` is the
   unique key. A row missing `us_aqi` is **not written**: it would permanently block that slot.
   `fetch.py` stores the other cities and exits 1 so the backup run fills the gap. Missing
   pollutant values (pm2_5, etc.) are written as empty strings. Daily stats need at least

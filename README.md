@@ -58,7 +58,9 @@ Every day at **03:17 UTC (08:47 IST)** the GitHub Actions workflow
    backoff. The run fails (goes red) instead of recording something wrong if the retries run
    out, the data is more than 6 hours old, the locations come back in an unexpected order, or
    a city has no AQI value. In the last case the other cities are still saved;
-3. runs **`make_chart.py`** to redraw [`charts/aqi_trend.png`](charts/aqi_trend.png);
+3. runs **`make_chart.py`** to redraw [`charts/aqi_trend.png`](charts/aqi_trend.png). The
+   chart plots the full-day mean AQI, falling back to the single snapshot only when no
+   full-day data exists yet;
 4. runs **`update_readme.py`** to rewrite the section between the `AQI:START` / `AQI:END`
    markers above;
 5. commits `data: AQI snapshot YYYY-MM-DD` and pushes to `main`, but only if something
@@ -72,6 +74,14 @@ You can also trigger a run by hand from the **Actions** tab (`workflow_dispatch`
 the first run of an IST day is the one that counts: a manual run at 22:00 records a 22:00
 reading for that date, and the next morning's run won't replace it. The README shows the
 actual fetch time.
+
+### Backfilling history
+
+Open-Meteo serves up to 92 days of past hourly data. To fill `aqi_daily.csv` with that history
+in one go, run the workflow manually (**Actions → Daily AQI snapshot → Run workflow**) with
+`past_days` set to `92`, or run `python fetch.py --past-days 92` locally. Days already stored
+are left untouched, so running it again is harmless. The snapshot CSV can't be backfilled,
+because the API only has a "current" value for now.
 
 A separate [CI workflow](.github/workflows/ci.yml) runs `ruff` and `pytest` on every pull
 request and push to `main`. Dependencies are pinned exactly in `requirements.txt`, and
@@ -91,7 +101,9 @@ Dependabot proposes upgrades monthly.
 | `o3` | ozone, µg/m³ |
 | `fetched_at_utc` | when the snapshot was taken, ISO-8601 UTC |
 
-`data/aqi_daily.csv` has one row per city per **completed** IST day:
+`data/aqi_daily.csv` has one row per city per **completed** IST day. Rows are in the order
+they were added (a backfill appends older days after newer ones), so sort by `date` when
+reading:
 
 | column | meaning |
 |---|---|
@@ -125,6 +137,7 @@ pip install -r requirements.txt
 pytest                      # offline tests (API is mocked)
 ruff check .                # lint (pip install ruff)
 python fetch.py             # real API call → data/aqi.csv + data/aqi_daily.csv
+python fetch.py --past-days 92   # same, plus daily stats for the last 92 days
 python make_chart.py        # → charts/aqi_trend.png
 python update_readme.py     # → README.md section
 ```

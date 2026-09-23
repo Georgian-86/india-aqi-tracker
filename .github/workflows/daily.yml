@@ -7,6 +7,11 @@ on:
     # on date+city); otherwise fills the gap left by a dropped/failed run.
     - cron: "17 6 * * *" # 11:47 IST
   workflow_dispatch:
+    inputs:
+      past_days:
+        description: "Past days of full-day stats to fetch (1-92). Days already stored are kept as-is; use 92 once to backfill history."
+        type: number
+        default: 1
 
 permissions:
   contents: write
@@ -20,9 +25,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/setup-python@v7
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
           cache: pip
@@ -36,7 +41,10 @@ jobs:
 
       - name: Fetch AQI
         id: fetch
-        run: python fetch.py
+        env:
+          # Scheduled runs have no inputs, so this falls back to 1.
+          PAST_DAYS: ${{ inputs.past_days || 1 }}
+        run: python fetch.py --past-days "$PAST_DAYS"
 
       # The steps below also run when fetch.py failed part-way (e.g. one city
       # returned no AQI): whatever rows it did store still get committed.
