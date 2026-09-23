@@ -108,7 +108,8 @@ Every day at **03:17 UTC (08:47 IST)** the GitHub Actions workflow
 4. runs **`report.py`**, which writes a **monthly report** to [`reports/`](reports/) once a
    month completes (a city ranking, days per India AQI category, and the main pollutants).
    Reports are written once and never rewritten, like the CSVs. Months with fewer than 20
-   days of data are skipped;
+   days of data are skipped. It also regenerates [`reports/README.md`](reports/README.md),
+   an index with one row per year; the section above links only the latest 3 reports;
 5. runs **`update_readme.py`** to rewrite the section between the `AQI:START` / `AQI:END`
    markers above: the latest snapshot, the latest full day with a 7-day mean and **CPCB
    health advice** for any city at Moderate or worse on India's scale, and **last 30 days**

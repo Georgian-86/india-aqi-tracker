@@ -1,8 +1,9 @@
 import calendar
 
+import fetch
 import report
 import update_readme
-from common import CITIES
+from common import CITIES, DAILY_COLUMNS
 
 
 def daily(day, city, mean, pm25="20.0", pm10="30.0"):
@@ -67,6 +68,34 @@ def test_main_no_complete_month(tmp_path, capsys):
     assert report.main(tmp_path / "none.csv", tmp_path / "none2.csv", tmp_path / "r") == 0
     assert "No new monthly reports." in capsys.readouterr().out
     assert not (tmp_path / "r").exists()
+
+
+def test_index_groups_by_year_newest_first():
+    md = report.render_index(["2025-11", "2025-12", "2026-01", "2026-03"])
+    rows = [line for line in md.splitlines() if line.startswith("| 20")]
+    assert [r[2:6] for r in rows] == ["2026", "2025"]
+    assert rows[0].startswith("| 2026 | [Jan](2026-01.md) | · | [Mar](2026-03.md) | · |")
+    assert rows[1].endswith("| [Nov](2025-11.md) | [Dec](2025-12.md) |")
+    assert "4 reports" in md and "README caveats" in md
+
+
+def test_main_writes_index_and_readme_links_only_recent(tmp_path):
+    reports = tmp_path / "r"
+    daily_csv = tmp_path / "d.csv"
+    rows = [r for m in ("2026-05", "2026-06", "2026-07", "2026-08")
+            for r in month_rows(m, range(1, calendar.monthrange(2026, int(m[5:]))[1] + 1))]
+    fetch.append_rows(daily_csv, rows, DAILY_COLUMNS)
+    assert report.main(daily_csv, tmp_path / "none.csv", reports) == 0
+    assert report.report_months(reports) == ["2026-05", "2026-06", "2026-07", "2026-08"]
+    assert "[Aug](2026-08.md)" in (reports / report.INDEX_NAME).read_text()
+
+    snap = [{"date": "2026-09-01", "city": CITIES[0][0], "us_aqi": "100", "pm2_5": "",
+             "pm10": "", "no2": "", "o3": "", "fetched_at_utc": "2026-09-01T03:17:00Z"}]
+    section = update_readme.render_section(snap, report_months=report.report_months(reports))
+    assert "reports/2026-08.md" in section and "reports/2026-06.md" in section
+    assert update_readme.RECENT_REPORTS == 3
+    assert "reports/2026-05.md" not in section  # older than RECENT_REPORTS
+    assert "[all 4 by year](reports/)" in section
 
 
 def test_readme_links_reports_newest_first():

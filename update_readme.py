@@ -26,6 +26,7 @@ from common import (
     naqi,
     read_rows,
 )
+import report
 
 START = "<!-- AQI:START -->"
 END = "<!-- AQI:END -->"
@@ -69,6 +70,7 @@ def _fetched_ist(rows: list[dict[str, str]]) -> str | None:
 # Readings further apart than this in time of day aren't compared: AQI has a
 # strong daily cycle, so 08:47 vs 22:00 would mostly measure the cycle.
 MAX_TIME_OF_DAY_GAP_MIN = 180
+RECENT_REPORTS = 3  # linked directly; the rest via reports/README.md
 
 
 def _minute_of_day_ist(fetched_at_utc: str) -> int | None:
@@ -351,11 +353,12 @@ def render_section(
     lines += render_india_summary(daily_rows or [], gas_rows or [])
     lines += ["", f"![US AQI trend by city]({CHART_URL})"]
     if report_months:
+        recent_months = sorted(report_months, reverse=True)[:RECENT_REPORTS]
         links = " · ".join(
-            f"[{calendar.month_abbr[int(m[5:])]} {m[:4]}](reports/{m}.md)"
-            for m in sorted(report_months, reverse=True)
+            f"[{calendar.month_abbr[int(m[5:])]} {m[:4]}](reports/{m}.md)" for m in recent_months
         )
-        lines += ["", f"**Monthly reports:** {links}"]
+        n = len(report_months)
+        lines += ["", f"**Monthly reports:** {links} · [all {n} by year](reports/)"]
     return f"{START}\n" + "\n".join(lines) + f"\n{END}"
 
 
@@ -388,7 +391,7 @@ def main(
             read_rows(daily_csv_path),
             read_rows(gases_csv_path),
             as_of=datetime.now(IST).date(),
-            report_months=[p.stem for p in sorted(reports_dir.glob("????-??.md"))],
+            report_months=report.report_months(reports_dir),
         )
     except (OSError, ValueError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
