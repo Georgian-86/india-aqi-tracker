@@ -15,6 +15,7 @@ on:
 
 permissions:
   contents: write
+  issues: write # alerts.py opens/comments/closes "aqi-alert" issues
 
 concurrency:
   group: daily-aqi
@@ -70,6 +71,13 @@ jobs:
           git commit -m "data: AQI snapshot $(TZ=Asia/Kolkata date +%F)"
           git pull --rebase origin main
           git push origin HEAD:main
+
+      # After the commit, so an alerts failure can't block saving data.
+      - name: Update alert issues
+        if: ${{ !cancelled() && steps.tests.outcome == 'success' }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python alerts.py
 
       - name: Fail if fetch failed
         if: ${{ !cancelled() && steps.fetch.outcome == 'failure' }}

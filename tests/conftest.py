@@ -48,7 +48,9 @@ def no_network(monkeypatch):
         raise RuntimeError("Network access attempted in tests")
 
     monkeypatch.setattr(requests.Session, "get", blocked)
+    monkeypatch.setattr(requests.Session, "request", blocked)
     monkeypatch.setattr(requests, "get", blocked)
+    monkeypatch.setattr(requests, "request", blocked)
 
 
 def _snapshot() -> dict[str, str]:

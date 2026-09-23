@@ -78,6 +78,12 @@ Every day at **03:17 UTC (08:47 IST)** the GitHub Actions workflow
    **last 30 days** table (days per EPA category, mean, and worst day per city);
 5. commits `data: AQI snapshot YYYY-MM-DD` and pushes to `main`, but only if something
    actually changed.
+6. runs **`alerts.py`**, which manages **GitHub issues for severe episodes**. It opens one
+   (label `aqi-alert`) when a city's full-day mean reaches **Very Unhealthy (≥ 201)**,
+   comments once per day while it lasts, and closes it once the mean drops **below 151**.
+   The gap between the two thresholds keeps an issue from flapping open and closed. Replayed
+   over the backfilled June–September data, this would have opened 3 issues, all for Delhi.
+   Watch the repo (Custom → Issues) to be notified.
 
 A **backup run at 06:17 UTC (11:47 IST)** does the same thing. It adds nothing if the morning
 run succeeded, and fills in any city the morning run missed (for example, if GitHub skipped
