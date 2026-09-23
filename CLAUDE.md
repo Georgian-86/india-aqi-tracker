@@ -22,6 +22,12 @@ Bengaluru, Kolkata and Chennai from the Open-Meteo Air Quality API (CAMS data) i
   with a snapshot table ("vs prev." is only shown when readings are within 3 h of the same
   time of day), a full-day table with a 7-day mean, and a last-30-days table (`render_summary`:
   days per category, mean, worst day). The 30-day table is omitted with fewer than 2 days.
+- `alerts.py` manages GitHub issues for severe episodes, based on the latest `aqi_daily.csv`
+  day. `plan()` is pure: open at ≥ `ALERT_AQI` (201), comment daily, close below `CLEAR_AQI`
+  (151). Every post appends `<!-- aqi-alert-date:YYYY-MM-DD -->` to the issue body, which
+  is the source of truth for which days were reported (no double posts, no reopen for a
+  reported day). Without `GITHUB_TOKEN`/`GITHUB_REPOSITORY` it does a dry run. The
+  workflow needs `issues: write`.
 - `tests/`: pytest. The fixture `tests/fixtures/open_meteo_response.json` mirrors the real
   multi-location response (a JSON array in coordinate order).
 - `.github/workflows/daily.yml`: cron `17 3 * * *` (08:47 IST), a backup cron `17 6 * * *`
