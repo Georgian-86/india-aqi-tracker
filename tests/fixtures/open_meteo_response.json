@@ -1,0 +1,142 @@
+[
+  {
+    "latitude": 28.6,
+    "longitude": 77.2,
+    "generationtime_ms": 0.2,
+    "utc_offset_seconds": 19800,
+    "timezone": "Asia/Kolkata",
+    "timezone_abbreviation": "GMT+5:30",
+    "elevation": 200.0,
+    "location_id": 0,
+    "current_units": {
+      "time": "iso8601",
+      "interval": "seconds",
+      "us_aqi": "USAQI",
+      "pm2_5": "μg/m³",
+      "pm10": "μg/m³",
+      "nitrogen_dioxide": "μg/m³",
+      "ozone": "μg/m³"
+    },
+    "current": {
+      "time": "2026-09-23T08:45",
+      "interval": 900,
+      "us_aqi": 168,
+      "pm2_5": 88.4,
+      "pm10": 142.1,
+      "nitrogen_dioxide": 41.3,
+      "ozone": 52.0
+    }
+  },
+  {
+    "latitude": 19.1,
+    "longitude": 72.9,
+    "generationtime_ms": 0.2,
+    "utc_offset_seconds": 19800,
+    "timezone": "Asia/Kolkata",
+    "timezone_abbreviation": "GMT+5:30",
+    "elevation": 200.0,
+    "location_id": 1,
+    "current_units": {
+      "time": "iso8601",
+      "interval": "seconds",
+      "us_aqi": "USAQI",
+      "pm2_5": "μg/m³",
+      "pm10": "μg/m³",
+      "nitrogen_dioxide": "μg/m³",
+      "ozone": "μg/m³"
+    },
+    "current": {
+      "time": "2026-09-23T08:45",
+      "interval": 900,
+      "us_aqi": 74,
+      "pm2_5": 23.6,
+      "pm10": 48.9,
+      "nitrogen_dioxide": 18.2,
+      "ozone": 61.5
+    }
+  },
+  {
+    "latitude": 13.0,
+    "longitude": 77.6,
+    "generationtime_ms": 0.2,
+    "utc_offset_seconds": 19800,
+    "timezone": "Asia/Kolkata",
+    "timezone_abbreviation": "GMT+5:30",
+    "elevation": 200.0,
+    "location_id": 2,
+    "current_units": {
+      "time": "iso8601",
+      "interval": "seconds",
+      "us_aqi": "USAQI",
+      "pm2_5": "μg/m³",
+      "pm10": "μg/m³",
+      "nitrogen_dioxide": "μg/m³",
+      "ozone": "μg/m³"
+    },
+    "current": {
+      "time": "2026-09-23T08:45",
+      "interval": 900,
+      "us_aqi": 52,
+      "pm2_5": 12.8,
+      "pm10": 25.3,
+      "nitrogen_dioxide": 14.7,
+      "ozone": 44.0
+    }
+  },
+  {
+    "latitude": 22.6,
+    "longitude": 88.4,
+    "generationtime_ms": 0.2,
+    "utc_offset_seconds": 19800,
+    "timezone": "Asia/Kolkata",
+    "timezone_abbreviation": "GMT+5:30",
+    "elevation": 200.0,
+    "location_id": 3,
+    "current_units": {
+      "time": "iso8601",
+      "interval": "seconds",
+      "us_aqi": "USAQI",
+      "pm2_5": "μg/m³",
+      "pm10": "μg/m³",
+      "nitrogen_dioxide": "μg/m³",
+      "ozone": "μg/m³"
+    },
+    "current": {
+      "time": "2026-09-23T08:45",
+      "interval": 900,
+      "us_aqi": 121,
+      "pm2_5": 43.9,
+      "pm10": 71.2,
+      "nitrogen_dioxide": 29.5,
+      "ozone": 38.6
+    }
+  },
+  {
+    "latitude": 13.1,
+    "longitude": 80.3,
+    "generationtime_ms": 0.2,
+    "utc_offset_seconds": 19800,
+    "timezone": "Asia/Kolkata",
+    "timezone_abbreviation": "GMT+5:30",
+    "elevation": 200.0,
+    "location_id": 4,
+    "current_units": {
+      "time": "iso8601",
+      "interval": "seconds",
+      "us_aqi": "USAQI",
+      "pm2_5": "μg/m³",
+      "pm10": "μg/m³",
+      "nitrogen_dioxide": "μg/m³",
+      "ozone": "μg/m³"
+    },
+    "current": {
+      "time": "2026-09-23T08:45",
+      "interval": 900,
+      "us_aqi": 38,
+      "pm2_5": 9.1,
+      "pm10": 19.8,
+      "nitrogen_dioxide": 11.2,
+      "ozone": 57.3
+    }
+  }
+]
