@@ -1,4 +1,4 @@
-"""Fetch current air quality for five Indian cities and append it to data/aqi.csv.
+"""Fetch current air quality for Indian cities (common.CITIES) into data/aqi.csv.
 
 One request covers all cities (Open-Meteo accepts comma-separated coordinates
 and returns a JSON array in the same order). Rows are keyed by (date, city);

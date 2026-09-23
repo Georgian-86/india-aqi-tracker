@@ -24,6 +24,10 @@ CITIES: list[tuple[str, float, float]] = [
     ("Bengaluru", 12.9716, 77.5946),
     ("Kolkata", 22.5726, 88.3639),
     ("Chennai", 13.0827, 80.2707),
+    # Added later; always append (never insert) so existing rows keep their meaning.
+    ("Hyderabad", 17.3850, 78.4867),
+    ("Pune", 18.5204, 73.8567),
+    ("Ahmedabad", 23.0225, 72.5714),
 ]
 
 COLUMNS = ["date", "city", "us_aqi", "pm2_5", "pm10", "no2", "o3", "fetched_at_utc"]
