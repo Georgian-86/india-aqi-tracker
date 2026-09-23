@@ -26,11 +26,11 @@ day and commits the result to this repository. The git history *is* the database
 
 | City | Mean AQI | Category | Peak AQI | 7-day mean | Mean PM2.5 (µg/m³) |
 |---|--:|---|--:|--:|--:|
-| Delhi | 172 | 🔴 Unhealthy | 206 | 172 (1d) | 68.8 |
-| Mumbai | 96 | 🟡 Moderate | 130 | 96 (1d) | 24.5 |
-| Bengaluru | 49 | 🟢 Good | 53 | 49 (1d) | 10.5 |
-| Kolkata | 64 | 🟡 Moderate | 72 | 64 (1d) | 10.1 |
-| Chennai | 73 | 🟡 Moderate | 84 | 73 (1d) | 17 |
+| Delhi | 172 | 🔴 Unhealthy | 206 | 157 | 68.8 |
+| Mumbai | 96 | 🟡 Moderate | 130 | 76 | 24.5 |
+| Bengaluru | 49 | 🟢 Good | 53 | 56 | 10.5 |
+| Kolkata | 64 | 🟡 Moderate | 72 | 104 | 10.1 |
+| Chennai | 73 | 🟡 Moderate | 84 | 93 | 17 |
 
 ![US AQI trend by city](charts/aqi_trend.png)
 <!-- AQI:END -->
