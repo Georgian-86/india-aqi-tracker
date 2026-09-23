@@ -13,7 +13,11 @@ Bengaluru, Kolkata and Chennai from the Open-Meteo Air Quality API (CAMS data) i
 - `update_readme.py` replaces the text between `<!-- AQI:START -->` and `<!-- AQI:END -->`.
 - `tests/`: pytest. The fixture `tests/fixtures/open_meteo_response.json` mirrors the real
   multi-location response (a JSON array in coordinate order).
-- `.github/workflows/daily.yml`: cron `17 3 * * *` (08:47 IST) plus manual dispatch.
+- `.github/workflows/daily.yml`: cron `17 3 * * *` (08:47 IST), a backup cron `17 6 * * *`
+  (11:47 IST), and manual dispatch. Chart, README and commit steps still run when `fetch.py`
+  fails, so partial data is kept. A final step then turns the job red.
+- `.github/workflows/ci.yml`: `ruff check .` and `pytest` on PRs and pushes to main.
+- `.github/dependabot.yml`: monthly pip and Actions updates.
 
 ## Conventions
 
@@ -23,13 +27,24 @@ Bengaluru, Kolkata and Chennai from the Open-Meteo Air Quality API (CAMS data) i
   `latitude`/`longitude`. Results map to `CITIES` by index. Validate the count.
 - **Dates:** `date` is the IST date taken from the API's `current.time`
   (`timezone=Asia/Kolkata`), never the runner's local clock. `fetched_at_utc` is
-  `YYYY-MM-DDTHH:MM:SSZ`.
+  `YYYY-MM-DDTHH:MM:SSZ`. Use `common.IST` for IST conversions. Never hard-code a snapshot
+  time in output; derive it from `fetched_at_utc`.
 - **CSV is append-only.** Never rewrite or reorder historical rows. `(date, city)` is the
-  unique key. Missing API values are written as empty strings.
+  unique key. A row missing `us_aqi` is **not written**: it would permanently block that slot.
+  `fetch.py` stores the other cities and exits 1 so the backup run fills the gap. Missing
+  pollutant values (pm2_5, etc.) are written as empty strings.
+- **Validate before writing:** response count, coordinates (within `COORD_TOLERANCE_DEG` of
+  `CITIES`), and freshness (`current.time` no older than `MAX_DATA_AGE`). A stale response
+  would otherwise dedupe to 0 rows while the run shows green.
 - **Failure must be loud:** scripts return non-zero from `main()` on error so the workflow
   goes red. Retry only transient failures (network errors, timeouts, 429, 5xx) with exponential backoff.
 - **Tests never touch the network.** `tests/conftest.py` blocks `requests`. Inject a fake
-  session and a no-op `sleep` into `fetch.fetch_payload` / `fetch.main`.
+  session, a no-op `sleep` and a fixed `now` into `fetch.fetch_payload` / `fetch.main`
+  (see `run_main` in `tests/test_fetch.py`).
+- **Dependencies are pinned exactly** in `requirements.txt`. Upgrade through Dependabot PRs.
+- **Lint:** `ruff check .` must pass (CI enforces it).
+- **Charts:** check them visually with 1 day and with many days of data. A short history
+  gets a minimum 7-day x-window. Markers are dropped past 60 points per series.
 - **Adding a city:** append it to `CITIES` in `common.py`, add a colour in
   `make_chart.CITY_COLORS`, add an entry to the test fixture, and update the README intro.
 - Generated files (`data/`, `charts/`, the README AQI section) are written by the workflow.
@@ -43,6 +58,7 @@ Bengaluru, Kolkata and Chennai from the Open-Meteo Air Quality API (CAMS data) i
 
 ```bash
 pip install -r requirements.txt
+ruff check .
 pytest
 python fetch.py && python make_chart.py && python update_readme.py
 ```

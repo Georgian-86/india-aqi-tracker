@@ -1,4 +1,5 @@
 import csv
+from datetime import datetime, timezone
 
 import pytest
 import requests
@@ -8,6 +9,13 @@ from common import CITIES, COLUMNS
 from conftest import FakeSession, make_response
 
 FETCHED_AT = "2026-09-23T03:17:00Z"
+# 03:17 UTC = 08:47 IST, two minutes after the fixture's current.time.
+NOW = datetime(2026, 9, 23, 3, 17, tzinfo=timezone.utc)
+
+
+def run_main(path, outcomes, now=NOW):
+    session = FakeSession(outcomes)
+    return fetch.main(csv_path=path, session=session, sleep=lambda s: None, now=now)
 
 
 def read_csv(path):
@@ -121,24 +129,60 @@ def test_fetch_does_not_retry_client_error():
     assert len(session.calls) == 1
 
 
+def test_parse_payload_rejects_misordered_locations(payload):
+    payload[0], payload[1] = payload[1], payload[0]  # Mumbai where Delhi should be
+    with pytest.raises(fetch.FetchError, match="order changed"):
+        fetch.parse_payload(payload, FETCHED_AT)
+
+
 def test_main_success_writes_csv(tmp_path, payload, capsys):
     path = tmp_path / "aqi.csv"
-    session = FakeSession([make_response(200, payload), make_response(200, payload)])
-    assert fetch.main(csv_path=path, session=session, sleep=lambda s: None) == 0
-    assert fetch.main(csv_path=path, session=session, sleep=lambda s: None) == 0
-    assert len(read_csv(path)) == 6  # second run deduped
+    assert run_main(path, [make_response(200, payload)]) == 0
+    assert run_main(path, [make_response(200, payload)]) == 0
+    lines = read_csv(path)
+    assert len(lines) == 6  # second run deduped
+    assert lines[1][-1] == "2026-09-23T03:17:00Z"
     assert "Wrote 0 new row(s)" in capsys.readouterr().out
 
 
 def test_main_exits_nonzero_on_failure(tmp_path):
     path = tmp_path / "aqi.csv"
-    session = FakeSession([requests.ConnectionError("down")] * fetch.MAX_ATTEMPTS)
-    assert fetch.main(csv_path=path, session=session, sleep=lambda s: None) == 1
+    assert run_main(path, [requests.ConnectionError("down")] * fetch.MAX_ATTEMPTS) == 1
     assert not path.exists()
 
 
 def test_main_exits_nonzero_on_malformed_payload(tmp_path, payload):
     path = tmp_path / "aqi.csv"
-    session = FakeSession([make_response(200, payload[:3])])
-    assert fetch.main(csv_path=path, session=session, sleep=lambda s: None) == 1
+    assert run_main(path, [make_response(200, payload[:3])]) == 1
     assert not path.exists()
+
+
+def test_main_rejects_stale_data(tmp_path, payload, capsys):
+    # API still serving yesterday's reading: must fail, not silently dedupe.
+    path = tmp_path / "aqi.csv"
+    now = datetime(2026, 9, 24, 3, 17, tzinfo=timezone.utc)
+    assert run_main(path, [make_response(200, payload)], now=now) == 1
+    assert not path.exists()
+    assert "Stale data" in capsys.readouterr().err
+
+
+def test_main_accepts_data_within_max_age(tmp_path, payload):
+    path = tmp_path / "aqi.csv"
+    now = datetime(2026, 9, 23, 8, 0, tzinfo=timezone.utc)  # 13:30 IST, 4h45m old
+    assert run_main(path, [make_response(200, payload)], now=now) == 0
+
+
+def test_main_missing_aqi_stores_others_then_backfills(tmp_path, payload):
+    path = tmp_path / "aqi.csv"
+    payload[3]["current"]["us_aqi"] = None  # Kolkata
+    assert run_main(path, [make_response(200, payload)]) == 1  # loud failure
+    assert [line[1] for line in read_csv(path)[1:]] == [
+        "Delhi", "Mumbai", "Bengaluru", "Chennai"
+    ]
+
+    # Backup run later the same day gets Kolkata; only that row is added.
+    payload[3]["current"]["us_aqi"] = 121
+    assert run_main(path, [make_response(200, payload)]) == 0
+    rows = read_csv(path)[1:]
+    assert len(rows) == 5
+    assert rows[-1][:3] == ["2026-09-23", "Kolkata", "121"]

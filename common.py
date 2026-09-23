@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import csv
+from datetime import timedelta, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 CSV_PATH = ROOT / "data" / "aqi.csv"
 CHART_PATH = ROOT / "charts" / "aqi_trend.png"
 README_PATH = ROOT / "README.md"
+
+IST = timezone(timedelta(hours=5, minutes=30), "IST")
 
 # (name, latitude, longitude) — order matters: the API returns results in
 # the same order as the coordinates we send.
