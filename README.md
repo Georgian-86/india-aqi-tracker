@@ -24,13 +24,15 @@ day and commits the result to this repository. The git history *is* the database
 
 **Full day 2026-09-22** (mean of 24 hourly values — comparable across days, unlike the single snapshot above)
 
-| City | Mean AQI | Category | Peak AQI | 7-day mean | Mean PM2.5 (µg/m³) |
-|---|--:|---|--:|--:|--:|
-| Delhi | 172 | 🔴 Unhealthy | 206 | 157 | 68.8 |
-| Mumbai | 96 | 🟡 Moderate | 130 | 76 | 24.5 |
-| Bengaluru | 49 | 🟢 Good | 53 | 56 | 10.5 |
-| Kolkata | 64 | 🟡 Moderate | 72 | 104 | 10.1 |
-| Chennai | 73 | 🟡 Moderate | 84 | 93 | 17 |
+| City | Mean AQI | Category | Peak AQI | 7-day mean | Mean PM2.5 (µg/m³) | India AQI (PM)¹ |
+|---|--:|---|--:|--:|--:|---|
+| Delhi | 172 | 🔴 Unhealthy | 206 | 157 | 68.8 | 129 Moderate |
+| Mumbai | 96 | 🟡 Moderate | 130 | 76 | 24.5 | 41 Good |
+| Bengaluru | 49 | 🟢 Good | 53 | 56 | 10.5 | 18 Good |
+| Kolkata | 64 | 🟡 Moderate | 72 | 104 | 10.1 | 17 Good |
+| Chennai | 73 | 🟡 Moderate | 84 | 93 | 17 | 28 Good |
+
+<sub>¹ India's National AQI (CPCB) scale, computed from the day's mean PM2.5 and PM10: Good ≤ 50 · Satisfactory ≤ 100 · Moderate ≤ 200 · Poor ≤ 300 · Very Poor ≤ 400 · Severe. Official NAQI uses at least three pollutants, so this is a PM-only approximation. It often reads better than the US figure for two reasons: stricter US breakpoints (PM2.5 is "Good" only up to 9 µg/m³ in the US, vs 30 in India), and the US figure also counts ozone and NO₂.</sub>
 
 **Last 30 days** (2026-08-24 to 2026-09-22, full-day means · 30 days of data): days in each category
 
@@ -136,6 +138,16 @@ reading:
 | `fetched_at_utc` | when it was fetched |
 
 ### Caveats
+
+- **Two AQI scales.** The main figures use the **US EPA AQI** (as reported by Open-Meteo). The
+  full-day table also shows **India's National AQI** (CPCB), which uses different breakpoints
+  and categories (Good, Satisfactory, Moderate, Poor, Very Poor, Severe). On 22 Sep 2026,
+  Delhi was US 172 "Unhealthy" but India 129 "Moderate". The gap has two causes: the US
+  breakpoints are stricter (PM2.5 is "Good" only up to 9 µg/m³, vs 30 in India), and the US
+  figure also includes ozone and NO₂, while the India figure here is computed from the day's
+  mean PM2.5 and PM10 only. Official NAQI requires at least three
+  pollutants, so treat it as a PM-driven approximation. "Severe (401+)" has no number,
+  because CPCB publishes no upper concentration for that band.
 
 - Values are **model estimates** from the CAMS global forecast (~40 km grid), not readings
   from ground monitoring stations. They are good for trends and comparisons but can differ

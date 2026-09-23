@@ -243,3 +243,17 @@ def test_chart_with_outliers_renders(tmp_path):
     fetch.append_rows(daily, rows, fetch.DAILY_COLUMNS)
     out = make_chart.render(tmp_path / "none.csv", tmp_path / "c.png", daily)
     assert out.stat().st_size > 0
+
+
+def test_daily_table_shows_india_aqi(csv_path):
+    daily = [
+        {**daily_row("2026-09-22", "Delhi", "172.2", peak="206", pm25="68.8"), "pm10_mean": "129.9"},
+        {**daily_row("2026-09-22", "Kolkata", "300.0", pm25="300.0")},  # Severe via PM2.5
+        {**daily_row("2026-09-22", "Chennai", "70.0", pm25="")},  # no PM data
+    ]
+    out = update_readme.update_readme(README, read_rows(csv_path), daily)
+    assert "| India AQI (PM)¹ |" in out
+    assert "| Delhi | 172 | 🔴 Unhealthy | 206 | 172 (1d) | 68.8 | 129 Moderate |" in out
+    assert "| Severe (401+) |" in out
+    assert "| Chennai | 70 | 🟡 Moderate | 200 | 70 (1d) | – | – |" in out
+    assert "PM-only approximation" in out
