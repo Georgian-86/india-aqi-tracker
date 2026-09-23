@@ -26,11 +26,11 @@ day and commits the result to this repository. The git history *is* the database
 
 | City | Mean AQI | Category | Peak AQI | 7-day mean | Mean PM2.5 (µg/m³) | India AQI¹ |
 |---|--:|---|--:|--:|--:|---|
-| Delhi | 172 | 🔴 Unhealthy | 206 | 157 | 68.8 | 129 Moderate · PM2.5² |
-| Mumbai | 96 | 🟡 Moderate | 130 | 76 | 24.5 | 41 Good · PM2.5² |
-| Bengaluru | 49 | 🟢 Good | 53 | 56 | 10.5 | 18 Good · PM2.5² |
-| Kolkata | 64 | 🟡 Moderate | 72 | 104 | 10.1 | 17 Good · PM2.5² |
-| Chennai | 73 | 🟡 Moderate | 84 | 93 | 17 | 28 Good · PM2.5² |
+| Delhi | 172 | 🔴 Unhealthy | 206 | 157 | 68.8 | 302 Very Poor · O₃ |
+| Mumbai | 96 | 🟡 Moderate | 130 | 76 | 24.5 | 181 Moderate · O₃ |
+| Bengaluru | 49 | 🟢 Good | 53 | 56 | 10.5 | 65 Satisfactory · O₃ |
+| Kolkata | 64 | 🟡 Moderate | 72 | 104 | 10.1 | 96 Satisfactory · O₃ |
+| Chennai | 73 | 🟡 Moderate | 84 | 93 | 17 | 141 Moderate · O₃ |
 
 <sub>¹ India's National AQI (CPCB) scale: Good ≤ 50 · Satisfactory ≤ 100 · Moderate ≤ 200 · Poor ≤ 300 · Very Poor ≤ 400 · Severe. Computed from the day's mean PM2.5, PM10 and NO₂ and maximum 8-hour O₃ (4 of CPCB's 8 pollutants), and labelled with the pollutant that sets it. ² marks a day with fewer than the 3 pollutants CPCB requires. It often reads better than the US figure because US breakpoints are stricter (PM2.5 is "Good" only up to 9 µg/m³ in the US, vs 30 in India).</sub>
 
