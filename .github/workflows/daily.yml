@@ -1,0 +1,53 @@
+name: Daily AQI snapshot
+
+on:
+  schedule:
+    - cron: "17 3 * * *" # 08:47 IST
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily-aqi
+  cancel-in-progress: false
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run tests
+        run: pytest -q
+
+      - name: Fetch AQI
+        run: python fetch.py
+
+      - name: Draw chart
+        run: python make_chart.py
+
+      - name: Update README
+        run: python update_readme.py
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "Georgian-86"
+          git config user.email "140907660+Georgian-86@users.noreply.github.com"
+          git add data/ charts/ README.md
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git commit -m "data: AQI snapshot $(TZ=Asia/Kolkata date +%F)"
+          git pull --rebase origin main
+          git push origin HEAD:main
