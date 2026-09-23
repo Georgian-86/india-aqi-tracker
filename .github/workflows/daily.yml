@@ -63,7 +63,7 @@ jobs:
         run: |
           git config user.name "Georgian-86"
           git config user.email "140907660+Georgian-86@users.noreply.github.com"
-          git add data/ charts/ README.md
+          git add data/ README.md
           if git diff --cached --quiet; then
             echo "No changes to commit."
             exit 0
@@ -71,6 +71,24 @@ jobs:
           git commit -m "data: AQI snapshot $(TZ=Asia/Kolkata date +%F)"
           git pull --rebase origin main
           git push origin HEAD:main
+
+      # The chart goes to a separate `charts` branch holding exactly one commit,
+      # replaced each run, so daily PNGs don't accumulate in main's history
+      # (~150 KB/day, which compresses poorly). Plumbing commands reuse the
+      # checkout's credentials, and the push is skipped if the image is
+      # unchanged.
+      - name: Publish chart
+        if: ${{ !cancelled() && steps.tests.outcome == 'success' }}
+        run: |
+          blob=$(git hash-object -w charts/aqi_trend.png)
+          if git fetch -q --depth=1 origin charts 2>/dev/null &&
+             [ "$(git rev-parse FETCH_HEAD:aqi_trend.png)" = "$blob" ]; then
+            echo "Chart unchanged."
+            exit 0
+          fi
+          tree=$(printf '100644 blob %s\taqi_trend.png\n' "$blob" | git mktree)
+          commit=$(git commit-tree "$tree" -m "chart: $(TZ=Asia/Kolkata date +%F)")
+          git push -f origin "$commit:refs/heads/charts"
 
       # After the commit, so an alerts failure can't block saving data.
       - name: Update alert issues

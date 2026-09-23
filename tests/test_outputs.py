@@ -44,7 +44,8 @@ def test_update_readme_replaces_only_marked_section(csv_path):
     assert "(fetched 08:47 IST · 2 days collected)" in out
     assert "| Delhi | 178 | 🔴 Unhealthy |" in out
     assert "| Chennai | 48 | 🟢 Good |" in out
-    assert "![US AQI trend by city](charts/aqi_trend.png)" in out
+    assert f"![US AQI trend by city]({update_readme.CHART_URL})" in out
+    assert "/charts/aqi_trend.png" in update_readme.CHART_URL
 
 
 def test_update_readme_is_stable_on_rerun(csv_path):

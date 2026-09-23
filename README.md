@@ -42,7 +42,7 @@ day and commits the result to this repository. The git history *is* the database
 | Kolkata | 1 | 20 | 8 | 1 | · | · | 87 | 164 on 2026-09-19 |
 | Chennai | · | 29 | 1 | · | · | · | 77 | 108 on 2026-09-17 |
 
-![US AQI trend by city](charts/aqi_trend.png)
+![US AQI trend by city](https://raw.githubusercontent.com/Georgian-86/india-aqi-tracker/charts/aqi_trend.png)
 <!-- AQI:END -->
 
 AQI categories follow the US EPA scale:
@@ -68,7 +68,9 @@ Every day at **03:17 UTC (08:47 IST)** the GitHub Actions workflow
    backoff. The run fails (goes red) instead of recording something wrong if the retries run
    out, the data is more than 6 hours old, the locations come back in an unexpected order, or
    a city has no AQI value. In the last case the other cities are still saved;
-3. runs **`make_chart.py`** to redraw [`charts/aqi_trend.png`](charts/aqi_trend.png). The
+3. runs **`make_chart.py`** to redraw the chart, then publishes it to the
+   [`charts`](../../tree/charts) branch. That branch holds a single commit that is replaced on
+   every run, so a new image each day doesn't bloat the repository's history. The
    chart plots the full-day mean AQI, falling back to the single snapshot only when no
    full-day data exists yet. If a rare extreme (such as a dust storm pushing Delhi past 600)
    would squash the other lines, the y-axis is capped at max(300, 95th percentile × 1.15).
@@ -159,7 +161,7 @@ pytest                      # offline tests (API is mocked)
 ruff check .                # lint (pip install ruff)
 python fetch.py             # real API call → data/aqi.csv + data/aqi_daily.csv
 python fetch.py --past-days 92   # same, plus daily stats for the last 92 days
-python make_chart.py        # → charts/aqi_trend.png
+python make_chart.py        # → charts/aqi_trend.png (git-ignored; CI publishes it)
 python update_readme.py     # → README.md section
 ```
 
