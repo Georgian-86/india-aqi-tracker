@@ -22,6 +22,16 @@ day and commits the result to this repository. The git history *is* the database
 
 <sub>vs prev.: change since the previous snapshot; “–” when there is none or the two were taken more than 3 h apart in time of day (AQI has a daily cycle).</sub>
 
+**Full day 2026-09-22** (mean of 24 hourly values — comparable across days, unlike the single snapshot above)
+
+| City | Mean AQI | Category | Peak AQI | 7-day mean | Mean PM2.5 (µg/m³) |
+|---|--:|---|--:|--:|--:|
+| Delhi | 172 | 🔴 Unhealthy | 206 | 172 (1d) | 68.8 |
+| Mumbai | 96 | 🟡 Moderate | 130 | 96 (1d) | 24.5 |
+| Bengaluru | 49 | 🟢 Good | 53 | 49 (1d) | 10.5 |
+| Kolkata | 64 | 🟡 Moderate | 72 | 64 (1d) | 10.1 |
+| Chennai | 73 | 🟡 Moderate | 84 | 73 (1d) | 17 |
+
 ![US AQI trend by city](charts/aqi_trend.png)
 <!-- AQI:END -->
 
