@@ -34,6 +34,9 @@ day and commits the result to this repository. The git history *is* the database
 
 <sub>¹ India's National AQI (CPCB) scale: Good ≤ 50 · Satisfactory ≤ 100 · Moderate ≤ 200 · Poor ≤ 300 · Very Poor ≤ 400 · Severe. Computed from the day's mean PM2.5, PM10 and NO₂ (3 of CPCB's 8 pollutants, its minimum), labelled with the pollutant that sets it. ² marks a day with fewer than 3. Ozone is left out: the CAMS model's surface ozone runs far above ground measurements over India, and would make O₃ the main pollutant almost every day. The India figure often reads better than the US one because US breakpoints are stricter (PM2.5 is "Good" only up to 9 µg/m³ in the US, vs 30 in India).</sub>
 
+**Health (CPCB):**
+- **Delhi**, Moderate: May cause breathing discomfort to people with lung disease such as asthma, and discomfort to people with heart disease, children and older adults.
+
 **Last 30 days** (2026-08-24 to 2026-09-22, full-day means · 30 days of data): days in each category
 
 | City | 🟢 Good | 🟡 Moderate | 🟠 USG | 🔴 Unhealthy | 🟣 V. Unhealthy | 🟤 Hazardous | Mean | Worst day |
@@ -88,8 +91,11 @@ Every day at **03:17 UTC (08:47 IST)** the GitHub Actions workflow
    would squash the other lines, the y-axis is capped at max(300, 95th percentile × 1.15).
    Clipped runs are marked ▲ with their peak value;
 4. runs **`update_readme.py`** to rewrite the section between the `AQI:START` / `AQI:END`
-   markers above: the latest snapshot, the latest full day with a 7-day mean, and a
-   **last 30 days** table (days per EPA category, mean, and worst day per city);
+   markers above: the latest snapshot, the latest full day with a 7-day mean and **CPCB
+   health advice** for any city at Moderate or worse on India's scale, and **last 30 days**
+   tables on both scales. If today's snapshot is missing (for example, the fetch failed), a
+   ⚠️ warning appears at the top of the section, because the README step runs even when the
+   fetch fails;
 5. commits `data: AQI snapshot YYYY-MM-DD` and pushes to `main`, but only if something
    actually changed.
 6. runs **`alerts.py`**, which manages **GitHub issues for severe episodes**. It opens one
@@ -168,6 +174,10 @@ the append-only `aqi_daily.csv` never needs its header rewritten:
   means), which is CPCB's minimum of three pollutants including PM, and names the pollutant
   that sets it. A day with fewer than 3 is marked ². "Severe (401+)" has no number, because
   CPCB publishes no upper concentration for that band.
+- **Does the ozone bias also skew the US AQI?** Mostly not. Over the 92 backfilled days, the US
+  AQI matches a PM-only US AQI (median gap 0 to +6 per city). Delhi's larger gaps are mostly
+  dust days, where averaging spiky hourly values raises the daily mean. Ozone added 20–30
+  points on only 5 Delhi days, and never enough to trigger an alert.
 - **Ozone is recorded but not used in the India AQI.** Compared with ground stations across
   India, CAMS surface ozone has been found to run 42–108 µg/m³ above observations, where
   observed daily means are about 7–58 µg/m³

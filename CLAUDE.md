@@ -36,8 +36,11 @@ Bengaluru, Kolkata and Chennai from the Open-Meteo Air Quality API (CAMS data) i
   squash the other lines. `peaks_above()` labels one peak per clipped run.
 - `update_readme.py` replaces the text between `<!-- AQI:START -->` and `<!-- AQI:END -->`
   with a snapshot table ("vs prev." is only shown when readings are within 3 h of the same
-  time of day), a full-day table with a 7-day mean, and a last-30-days table (`render_summary`:
-  days per category, mean, worst day). The 30-day table is omitted with fewer than 2 days.
+  time of day), a full-day table with a 7-day mean plus CPCB health advice (`NAQI_HEALTH`,
+  Moderate or worse), and last-30-days tables on both scales (`render_summary`,
+  `render_india_summary`, sharing `_summary_window`). They are omitted with fewer than 2
+  days. `as_of` (today's IST date, from `main()`) adds a staleness warning when today's
+  snapshot is missing. Tests pass `as_of` explicitly or leave it None.
 - `alerts.py` manages GitHub issues for severe episodes, based on the latest `aqi_daily.csv`
   day. `plan()` is pure: open at ≥ `ALERT_AQI` (201), comment daily, close below `CLEAR_AQI`
   (151). Every post appends `<!-- aqi-alert-date:YYYY-MM-DD -->` to the issue body, which
