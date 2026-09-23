@@ -14,6 +14,10 @@ Open-Meteo Air Quality API (CAMS data) into
   and `read_rows()`. India AQI is computed at render time from stored means. Don't add it as
   a CSV column. Above the last CPCB band it returns `index=None` ("Severe"); never
   extrapolate a number.
+- **The data is not homogeneous over time** (CAMS model upgrades). Known steps: NO₂ in all
+  cities at the end of June 2023 (about 2× before), and Delhi's March–June PM10 from 2025
+  (about 4×). Don't add year-over-year or long-term trend features without handling this.
+  Before adding one, compare same-month ratios across years for every city and pollutant.
 - **Don't put O₃ back into the India AQI** (`update_readme.india_result` passes no ozone).
   CAMS surface ozone is strongly biased high over India. With it, O₃ was the prominent
   pollutant almost every day in every city. Check any new pollutant against real data

@@ -220,6 +220,19 @@ the append-only `aqi_daily.csv` never needs its header rewritten:
   winter it's usually worst in the early morning), so snapshots are only comparable across
   days when taken at a similar time. That's why the README's "vs prev." column only compares
   readings taken within 3 hours of the same time of day. For trends, use `aqi_daily.csv`.
+- **Don't read long-term trends from this data: the model changes over time.** The backfilled
+  history (August 2022 onward) comes from CAMS forecasts, whose model is upgraded
+  periodically, and two step changes show up in it:
+  - **NO₂, all cities, end of June 2023:** January–June 2023 averages about 2× the same
+    months of 2024 across the cities (month-on-month ratios 0.43–0.56). From July 2023 the
+    year-on-year ratio is about 1. Real urban NO₂ doesn't halve overnight in eight cities.
+  - **PM10, Delhi's dust season, from 2025:** March–June PM10 goes from about 80–100 µg/m³
+    (2023) to 300–490 (2025–26), while Delhi's October–February PM10 stays flat (about
+    100–180) and no other city shows anything similar.
+
+  Comparisons within a season of the same year are fine. Year-over-year comparisons, above
+  all Delhi's pre-monsoon US AQI, are not. That's why this project has no year-over-year
+  table. The monthly reports are accurate descriptions of what the model said at the time.
 - **Delhi's worst months in this data are March–June, not winter.** Monthly means peak
   pre-monsoon (up to ~380 in May 2026), driven by PM10 (dust), while winter months are ~185–
   205. Ground stations usually show the reverse, with PM2.5 smog in November–January as
