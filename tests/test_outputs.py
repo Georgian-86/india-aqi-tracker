@@ -361,3 +361,22 @@ def test_chart_window_keeps_last_365_days():
     kept = series["Delhi"]
     assert len(kept) == 365 and kept[-1] == pts[-1]
     assert make_chart.recent({}) == {}
+
+
+def test_chart_long_history_with_clipped_peak_renders(tmp_path, monkeypatch):
+    # >60 days takes the faint-daily + 7-day-mean branch; a spike above the cap
+    # takes the per-panel peak note.
+    daily = tmp_path / "d.csv"
+    start = date(2026, 1, 1)
+    rows = [daily_row((start + timedelta(days=i)).isoformat(), c,
+                      str(700.0 if (c == "Delhi" and i == 50) else 100.0 + i % 20))
+            for i in range(120) for c in ("Delhi", "Mumbai", "Pune")]
+    fetch.append_rows(daily, rows, fetch.DAILY_COLUMNS)
+    notes = []
+    real_text = make_chart.plt.Axes.text
+    monkeypatch.setattr(make_chart.plt.Axes, "text",
+                        lambda self, *a, **k: notes.append(a[2]) or real_text(self, *a, **k))
+    out = make_chart.render(tmp_path / "none.csv", tmp_path / "c.png", daily)
+    assert out.stat().st_size > 0
+    peaks = [n for n in notes if str(n).startswith("peak ")]
+    assert peaks == ["peak 700 · 20 Feb"]  # only Delhi's panel, one note
