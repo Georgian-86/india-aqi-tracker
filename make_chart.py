@@ -42,6 +42,38 @@ GRID = "#e4e3df"
 BAND = "#f1f0ec"
 MIN_WINDOW_DAYS = 7  # a zero-width date axis renders garbage ticks
 MAX_MARKER_POINTS = 60  # beyond this, markers just clutter the lines
+# A dust storm can push one city's daily mean past 600 and squash every other
+# line into the bottom of the chart. Cap the axis instead, and label peaks.
+MIN_Y_CAP = 300  # top of "Very Unhealthy"; never clip below this
+Y_CAP_PERCENTILE = 0.95
+Y_CAP_HEADROOM = 1.15
+
+
+def y_limit(values: list[float]) -> tuple[float, bool]:
+    """Axis top and whether anything is clipped above it."""
+    ymax = max(values)
+    ordered = sorted(values)
+    p95 = ordered[round(Y_CAP_PERCENTILE * (len(ordered) - 1))]
+    cap = max(MIN_Y_CAP, p95 * Y_CAP_HEADROOM)
+    if ymax * 1.1 <= cap:
+        return max(100, ymax * 1.1), False
+    return cap, True
+
+
+def peaks_above(points: list[tuple[date, float]], cap: float) -> list[tuple[date, float]]:
+    """The highest point of each consecutive run of points above cap."""
+    peaks: list[tuple[date, float]] = []
+    in_run = False
+    for d, v in points:
+        if v > cap:
+            if in_run and v > peaks[-1][1]:
+                peaks[-1] = (d, v)
+            elif not in_run:
+                peaks.append((d, v))
+            in_run = True
+        else:
+            in_run = False
+    return peaks
 
 
 def load_series(csv_path: Path, column: str = "us_aqi") -> dict[str, list[tuple[date, float]]]:
@@ -81,8 +113,9 @@ def render(
                 color=TEXT_SECONDARY, fontsize=14, transform=ax.transAxes)
         ax.set_axis_off()
     else:
-        ymax = max(v for pts in series.values() for _, v in pts)
-        top = max(100, ymax * 1.1)
+        top, clipped = y_limit([v for pts in series.values() for _, v in pts])
+        if clipped:
+            note += f" · values above {top:.0f} run off the top (peaks labelled)"
 
         # Alternating neutral bands for EPA categories, labelled on the right.
         lower = 0
@@ -105,6 +138,13 @@ def render(
             ax.plot(xs, ys, label=city, color=CITY_COLORS[city], lw=2,
                     marker=marker, markersize=6, markeredgecolor=SURFACE,
                     markeredgewidth=1.5, zorder=3)
+            for d, v in peaks_above(pts, top) if clipped else []:
+                ax.plot([d], [top], marker="^", markersize=7, color=CITY_COLORS[city],
+                        markeredgecolor=SURFACE, clip_on=False, zorder=4)
+                ax.annotate(f"{v:.0f}", xy=(d, top), xytext=(5, -2),
+                            textcoords="offset points", ha="left", va="top",
+                            fontsize=7.5, color=TEXT_SECONDARY, zorder=5,
+                            bbox={"boxstyle": "square,pad=0.15", "fc": SURFACE, "ec": "none"})
 
         first = min(d for pts in series.values() for d, _ in pts)
         last = max(d for pts in series.values() for d, _ in pts)

@@ -8,7 +8,9 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 
 from common import (
+    AQI_CATEGORIES,
     CITIES,
+    HAZARDOUS,
     CSV_PATH,
     DAILY_CSV_PATH,
     IST,
@@ -124,6 +126,54 @@ def render_daily(daily_rows: list[dict[str, str]]) -> list[str]:
     return lines
 
 
+SUMMARY_DAYS = 30
+CATEGORY_SHORT = {
+    "Good": "Good",
+    "Moderate": "Moderate",
+    "Unhealthy for Sensitive Groups": "USG",
+    "Unhealthy": "Unhealthy",
+    "Very Unhealthy": "V. Unhealthy",
+    "Hazardous": "Hazardous",
+}
+
+
+def render_summary(daily_rows: list[dict[str, str]]) -> list[str]:
+    """Days per EPA category, mean and worst day per city over the last 30 days."""
+    days_present = sorted({r["date"] for r in daily_rows})
+    if len(days_present) < 2:  # nothing beyond the single-day table
+        return []
+    end = days_present[-1]
+    start = (date.fromisoformat(end) - timedelta(days=SUMMARY_DAYS - 1)).isoformat()
+    window = [r for r in daily_rows if start <= r["date"] <= end]
+    n_days = len({r["date"] for r in window})
+    categories = [label for _, label in AQI_CATEGORIES] + [HAZARDOUS]
+
+    header = " | ".join(f"{CATEGORY_ICON[c]} {CATEGORY_SHORT[c]}" for c in categories)
+    lines = [
+        "",
+        f"**Last {SUMMARY_DAYS} days** ({start} to {end}, full-day means · "
+        f"{n_days} day{'s' if n_days != 1 else ''} of data): days in each category",
+        "",
+        f"| City | {header} | Mean | Worst day |",
+        "|---|" + "--:|" * len(categories) + "--:|---|",
+    ]
+    for city, _, _ in CITIES:
+        rows = [r for r in window if r["city"] == city]
+        if not rows:
+            continue
+        counts = {c: 0 for c in categories}
+        for r in rows:
+            counts[aqi_category(r["us_aqi_mean"])] += 1
+        cells = " | ".join(str(counts[c]) if counts[c] else "·" for c in categories)
+        mean = sum(float(r["us_aqi_mean"]) for r in rows) / len(rows)
+        worst = max(rows, key=lambda r: (float(r["us_aqi_mean"]), r["date"]))
+        lines.append(
+            f"| {city} | {cells} | {mean:.0f} | "
+            f"{float(worst['us_aqi_mean']):.0f} on {worst['date']} |"
+        )
+    return lines
+
+
 def render_section(
     rows: list[dict[str, str]], daily_rows: list[dict[str, str]] | None = None
 ) -> str:
@@ -160,6 +210,7 @@ def render_section(
         "two were taken more than 3 h apart in time of day (AQI has a daily cycle).</sub>",
     ]
     lines += render_daily(daily_rows or [])
+    lines += render_summary(daily_rows or [])
     lines += ["", f"![US AQI trend by city]({CHART_REL})"]
     return f"{START}\n" + "\n".join(lines) + f"\n{END}"
 
