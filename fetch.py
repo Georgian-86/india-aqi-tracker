@@ -11,6 +11,7 @@ don't depend on what time of day the job happened to run.
 
 from __future__ import annotations
 
+import argparse
 import csv
 import sys
 import time
@@ -35,6 +36,8 @@ CURRENT_VARS = ["us_aqi", "pm2_5", "pm10", "nitrogen_dioxide", "ozone"]
 HOURLY_VARS = ["us_aqi", "pm2_5", "pm10"]
 # Skip a city's daily stats (and fail) if fewer hours than this have data.
 MIN_DAILY_HOURS = 20
+# Open-Meteo serves at most this many past days; used for one-off backfills.
+MAX_PAST_DAYS = 92
 # API variable -> CSV column
 FIELD_MAP = {
     "us_aqi": "us_aqi",
@@ -59,14 +62,14 @@ class FetchError(RuntimeError):
     pass
 
 
-def build_params() -> dict[str, str]:
+def build_params(past_days: int = 1) -> dict[str, str]:
     return {
         "latitude": ",".join(f"{lat}" for _, lat, _ in CITIES),
         "longitude": ",".join(f"{lon}" for _, _, lon in CITIES),
         "current": ",".join(CURRENT_VARS),
         "hourly": ",".join(HOURLY_VARS),
-        # Yesterday + today, in local (IST) hours.
-        "past_days": "1",
+        # The previous `past_days` IST days + today, in local hours.
+        "past_days": str(past_days),
         "forecast_days": "1",
         "timezone": TIMEZONE,
     }
@@ -76,10 +79,11 @@ def fetch_payload(
     session: requests.Session | None = None,
     max_attempts: int = MAX_ATTEMPTS,
     sleep=time.sleep,
+    past_days: int = 1,
 ) -> list[dict]:
     """GET the API with exponential backoff on network errors and 429/5xx."""
     session = session or requests.Session()
-    params = build_params()
+    params = build_params(past_days)
     last_error: Exception | None = None
 
     for attempt in range(1, max_attempts + 1):
@@ -165,40 +169,53 @@ def _mean(values: list[float]) -> str:
 
 
 def parse_daily(
-    payload: list[dict], fetched_at_utc: str
+    payload: list[dict], fetched_at_utc: str, days: int = 1
 ) -> tuple[list[dict[str, str]], list[str]]:
-    """Full-day stats for the IST day before current.time, one row per city.
+    """Full-day stats for each of the `days` IST days before current.time.
 
-    Returns (rows, cities_skipped). A city is skipped when fewer than
-    MIN_DAILY_HOURS of its 24 hours have a us_aqi value.
+    Returns (rows, skipped), rows ordered by date then city. An entry in
+    skipped ("City YYYY-MM-DD") means fewer than MIN_DAILY_HOURS of that
+    day's 24 hours had a us_aqi value.
     """
-    rows, skipped = [], []
+    per_day: dict[str, list[dict[str, str]]] = {}
+    skipped = []
     for (city, _, _), loc in zip(CITIES, payload):
         today = datetime.fromisoformat(loc["current"]["time"]).date()
-        day = (today - timedelta(days=1)).isoformat()
         hourly = loc.get("hourly") or {}
         times = hourly.get("time") or []
-        idx = [i for i, t in enumerate(times) if t.startswith(day)]
-
-        def series(key: str) -> list[float]:
-            values = hourly.get(key) or []
-            return [values[i] for i in idx if i < len(values) and values[i] is not None]
-
-        aqi, pm25, pm10 = series("us_aqi"), series("pm2_5"), series("pm10")
-        if len(aqi) < MIN_DAILY_HOURS:
-            skipped.append(city)
-            continue
-        rows.append({
-            "date": day,
-            "city": city,
-            "hours": str(len(aqi)),
-            "us_aqi_mean": _mean(aqi),
-            "us_aqi_max": _fmt(max(aqi)),
-            "pm2_5_mean": _mean(pm25) if pm25 else "",
-            "pm10_mean": _mean(pm10) if pm10 else "",
-            "fetched_at_utc": fetched_at_utc,
-        })
+        for back in range(days, 0, -1):
+            day = (today - timedelta(days=back)).isoformat()
+            row = _day_stats(hourly, times, day, city, fetched_at_utc)
+            if row is None:
+                skipped.append(f"{city} {day}")
+            else:
+                per_day.setdefault(day, []).append(row)
+    rows = [r for day in sorted(per_day) for r in per_day[day]]
     return rows, skipped
+
+
+def _day_stats(
+    hourly: dict, times: list[str], day: str, city: str, fetched_at_utc: str
+) -> dict[str, str] | None:
+    idx = [i for i, t in enumerate(times) if t.startswith(day)]
+
+    def series(key: str) -> list[float]:
+        values = hourly.get(key) or []
+        return [values[i] for i in idx if i < len(values) and values[i] is not None]
+
+    aqi, pm25, pm10 = series("us_aqi"), series("pm2_5"), series("pm10")
+    if len(aqi) < MIN_DAILY_HOURS:
+        return None
+    return {
+        "date": day,
+        "city": city,
+        "hours": str(len(aqi)),
+        "us_aqi_mean": _mean(aqi),
+        "us_aqi_max": _fmt(max(aqi)),
+        "pm2_5_mean": _mean(pm25) if pm25 else "",
+        "pm10_mean": _mean(pm10) if pm10 else "",
+        "fetched_at_utc": fetched_at_utc,
+    }
 
 
 def append_rows(
@@ -226,14 +243,15 @@ def main(
     session: requests.Session | None = None,
     sleep=time.sleep,
     now: datetime | None = None,
+    past_days: int = 1,
 ) -> int:
     now = now or datetime.now(timezone.utc)
     try:
-        payload = fetch_payload(session=session, sleep=sleep)
+        payload = fetch_payload(session=session, sleep=sleep, past_days=past_days)
         fetched_at = now.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         rows = parse_payload(payload, fetched_at)
         check_fresh(payload, now)
-        daily_rows, daily_skipped = parse_daily(payload, fetched_at)
+        daily_rows, daily_skipped = parse_daily(payload, fetched_at, past_days)
     except (requests.RequestException, FetchError, ValueError, KeyError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
@@ -250,7 +268,7 @@ def main(
     print(f"Wrote {written} new row(s) to {csv_path}")
 
     daily_written = append_rows(daily_csv_path, daily_rows, DAILY_COLUMNS)
-    for r in daily_rows:
+    for r in daily_rows[-len(CITIES):]:  # a backfill would print hundreds
         print(
             f"{r['date']}  {r['city']:<10} 24h mean AQI={r['us_aqi_mean']} "
             f"max={r['us_aqi_max']} ({r['hours']}h)"
@@ -264,12 +282,27 @@ def main(
     if daily_skipped:
         print(
             f"ERROR: fewer than {MIN_DAILY_HOURS} hourly values for "
-            f"{', '.join(daily_skipped)}; daily stats not stored",
+            f"{len(daily_skipped)} city-day(s), not stored: {', '.join(daily_skipped[:20])}",
             file=sys.stderr,
         )
         failed = True
     return 1 if failed else 0
 
 
+def cli(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument(
+        "--past-days",
+        type=int,
+        default=1,
+        help=f"complete past IST days to compute daily stats for (1-{MAX_PAST_DAYS}); "
+        "use a large value once to backfill history",
+    )
+    args = parser.parse_args(argv)
+    if not 1 <= args.past_days <= MAX_PAST_DAYS:
+        parser.error(f"--past-days must be between 1 and {MAX_PAST_DAYS}")
+    return main(past_days=args.past_days)
+
+
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(cli())

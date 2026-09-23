@@ -69,13 +69,38 @@ def test_update_readme_requires_markers():
 
 
 def test_chart_is_written(csv_path, tmp_path):
-    out = make_chart.render(csv_path, tmp_path / "charts" / "aqi.png")
+    out = make_chart.render(csv_path, tmp_path / "charts" / "aqi.png", tmp_path / "none.csv")
     assert out.read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
 
 
 def test_chart_placeholder_when_no_data(tmp_path):
-    out = make_chart.render(tmp_path / "missing.csv", tmp_path / "chart.png")
+    out = make_chart.render(
+        tmp_path / "missing.csv", tmp_path / "chart.png", tmp_path / "missing_daily.csv"
+    )
     assert out.exists() and out.stat().st_size > 0
+
+
+def test_chart_prefers_daily_means(csv_path, tmp_path, payload, monkeypatch):
+    daily = tmp_path / "daily.csv"
+    rows, _ = fetch.parse_daily(payload, "x")
+    fetch.append_rows(daily, rows, fetch.DAILY_COLUMNS)
+    seen = []
+    real = make_chart.load_series
+    monkeypatch.setattr(
+        make_chart, "load_series", lambda p, col="us_aqi": seen.append(col) or real(p, col)
+    )
+    make_chart.render(csv_path, tmp_path / "c.png", daily)
+    assert seen == ["us_aqi_mean"]  # snapshot CSV not needed
+
+
+def test_chart_falls_back_to_snapshots(csv_path, tmp_path, monkeypatch):
+    seen = []
+    real = make_chart.load_series
+    monkeypatch.setattr(
+        make_chart, "load_series", lambda p, col="us_aqi": seen.append(col) or real(p, col)
+    )
+    make_chart.render(csv_path, tmp_path / "c.png", tmp_path / "no_daily.csv")
+    assert seen == ["us_aqi_mean", "us_aqi"]
 
 
 def test_change_since_previous_reading(csv_path):

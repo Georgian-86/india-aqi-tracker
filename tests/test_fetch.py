@@ -37,6 +37,7 @@ def test_build_params_single_request_for_all_cities():
     assert params["current"] == "us_aqi,pm2_5,pm10,nitrogen_dioxide,ozone"
     assert params["hourly"] == "us_aqi,pm2_5,pm10"
     assert (params["past_days"], params["forecast_days"]) == ("1", "1")
+    assert fetch.build_params(past_days=92)["past_days"] == "92"
     assert params["timezone"] == "Asia/Kolkata"
 
 
@@ -226,7 +227,7 @@ def test_parse_daily_skips_city_with_too_few_hours(payload):
     for i in range(24 - fetch.MIN_DAILY_HOURS + 1):
         payload[4]["hourly"]["us_aqi"][i] = None
     rows, skipped = fetch.parse_daily(payload, FETCHED_AT)
-    assert skipped == ["Chennai"]
+    assert skipped == ["Chennai 2026-09-22"]
     assert len(rows) == 4
 
 
@@ -253,3 +254,70 @@ def test_main_fails_but_keeps_snapshot_when_hourly_missing(tmp_path, payload):
     assert run_main(path, [make_response(200, payload)], daily_path=daily) == 1
     assert len(read_csv(path)) == 6  # snapshot fully stored
     assert "Bengaluru" not in [line[1] for line in read_csv(daily)]
+
+
+def with_history(payload, days):
+    """Rewrite each location's hourly block to cover `days` past days + today."""
+    from datetime import timedelta
+
+    start = datetime(2026, 9, 23) - timedelta(days=days)
+    hours = (days + 1) * 24
+    times = [(start + timedelta(hours=h)).strftime("%Y-%m-%dT%H:%M") for h in range(hours)]
+    for n, loc in enumerate(payload):
+        # Day k (0 = oldest) has AQI 100 + 10*k + city index, flat all day.
+        loc["hourly"] = {
+            "time": times,
+            "us_aqi": [100 + 10 * (h // 24) + n for h in range(hours)],
+            "pm2_5": [50.0] * hours,
+            "pm10": [80.0] * hours,
+        }
+    return payload
+
+
+def test_parse_daily_backfill_covers_every_past_day(payload):
+    rows, skipped = fetch.parse_daily(with_history(payload, 3), FETCHED_AT, days=3)
+    assert skipped == []
+    assert [(r["date"], r["city"]) for r in rows][:6] == [
+        ("2026-09-20", "Delhi"), ("2026-09-20", "Mumbai"), ("2026-09-20", "Bengaluru"),
+        ("2026-09-20", "Kolkata"), ("2026-09-20", "Chennai"), ("2026-09-21", "Delhi"),
+    ]
+    assert len(rows) == 15
+    assert {r["date"] for r in rows} == {"2026-09-20", "2026-09-21", "2026-09-22"}
+    by_key = {(r["date"], r["city"]): r for r in rows}
+    assert by_key[("2026-09-22", "Mumbai")]["us_aqi_mean"] == "121.0"  # 100 + 10*2 + 1
+
+
+def test_parse_daily_backfill_reports_gaps_per_day(payload):
+    payload = with_history(payload, 3)
+    for i in range(24, 48):  # wipe 2026-09-21 for Delhi
+        payload[0]["hourly"]["us_aqi"][i] = None
+    rows, skipped = fetch.parse_daily(payload, FETCHED_AT, days=3)
+    assert skipped == ["Delhi 2026-09-21"]
+    assert len(rows) == 14
+
+
+def test_main_backfill_then_daily_run_dedupes(tmp_path, payload):
+    path, daily = tmp_path / "aqi.csv", tmp_path / "aqi_daily.csv"
+    session = FakeSession([make_response(200, with_history(payload, 5))])
+    assert fetch.main(csv_path=path, daily_csv_path=daily, session=session,
+                      sleep=lambda s: None, now=NOW, past_days=5) == 0
+    assert session.calls[0]["params"]["past_days"] == "5"
+    assert len(read_csv(daily)) == 1 + 25
+    # The normal daily run afterwards adds nothing new for yesterday.
+    assert run_main(path, [make_response(200, with_history(payload, 1))], daily_path=daily) == 0
+    assert len(read_csv(daily)) == 1 + 25
+
+
+@pytest.mark.parametrize("bad", ["0", "93", "-1"])
+def test_cli_rejects_out_of_range_past_days(bad):
+    with pytest.raises(SystemExit):
+        fetch.cli(["--past-days", bad])
+
+
+def test_cli_passes_past_days(monkeypatch):
+    seen = {}
+    monkeypatch.setattr(fetch, "main", lambda **kw: seen.update(kw) or 0)
+    assert fetch.cli(["--past-days", "92"]) == 0
+    assert seen == {"past_days": 92}
+    assert fetch.cli([]) == 0
+    assert seen == {"past_days": 1}

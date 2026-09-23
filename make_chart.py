@@ -1,4 +1,9 @@
-"""Render charts/aqi_trend.png: US AQI per city over every collected day."""
+"""Render charts/aqi_trend.png: US AQI per city over every collected day.
+
+Plots the full-day mean (data/aqi_daily.csv) once any exists, since it's
+comparable across days. Until then it falls back to the single daily
+snapshot (data/aqi.csv).
+"""
 
 from __future__ import annotations
 
@@ -13,7 +18,14 @@ matplotlib.use("Agg")
 import matplotlib.dates as mdates  # noqa: E402
 import matplotlib.pyplot as plt  # noqa: E402
 
-from common import AQI_CATEGORIES, CHART_PATH, CITIES, CSV_PATH, read_rows  # noqa: E402
+from common import (  # noqa: E402
+    AQI_CATEGORIES,
+    CHART_PATH,
+    CITIES,
+    CSV_PATH,
+    DAILY_CSV_PATH,
+    read_rows,
+)
 
 # Fixed categorical order, one hue per city (never reassigned by rank).
 CITY_COLORS = {
@@ -32,21 +44,32 @@ MIN_WINDOW_DAYS = 7  # a zero-width date axis renders garbage ticks
 MAX_MARKER_POINTS = 60  # beyond this, markers just clutter the lines
 
 
-def load_series(csv_path: Path) -> dict[str, list[tuple[date, float]]]:
+def load_series(csv_path: Path, column: str = "us_aqi") -> dict[str, list[tuple[date, float]]]:
     series: dict[str, list[tuple[date, float]]] = defaultdict(list)
     for row in read_rows(csv_path):
-        if not row.get("us_aqi"):
+        if not row.get(column):
             continue
         series[row["city"]].append(
-            (date.fromisoformat(row["date"]), float(row["us_aqi"]))
+            (date.fromisoformat(row["date"]), float(row[column]))
         )
     for points in series.values():
         points.sort()
     return series
 
 
-def render(csv_path: Path = CSV_PATH, out_path: Path = CHART_PATH) -> Path:
-    series = load_series(csv_path)
+def render(
+    csv_path: Path = CSV_PATH,
+    out_path: Path = CHART_PATH,
+    daily_csv_path: Path = DAILY_CSV_PATH,
+) -> Path:
+    series = load_series(daily_csv_path, "us_aqi_mean")
+    if series:
+        title = "Daily mean US AQI — Indian metros"
+        note = "24-hour mean of hourly model values"
+    else:
+        series = load_series(csv_path)
+        title = "Daily US AQI snapshot — Indian metros"
+        note = "one model reading per day"
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
     fig, ax = plt.subplots(figsize=(10, 5), dpi=120)
@@ -101,9 +124,8 @@ def render(csv_path: Path = CSV_PATH, out_path: Path = CHART_PATH) -> Path:
                   frameon=False, fontsize=9, labelcolor=TEXT_PRIMARY,
                   borderaxespad=0, handlelength=1.5)
 
-    ax.set_title("Daily US AQI — Indian metros", loc="left", color=TEXT_PRIMARY,
-                 fontsize=13, pad=26)
-    fig.text(0.01, 0.01, "Source: CAMS via Open-Meteo (CC BY 4.0) · one model reading per day",
+    ax.set_title(title, loc="left", color=TEXT_PRIMARY, fontsize=13, pad=26)
+    fig.text(0.01, 0.01, f"Source: CAMS via Open-Meteo (CC BY 4.0) · {note}",
              color=TEXT_SECONDARY, fontsize=7.5)
     fig.tight_layout()
     fig.savefig(out_path, facecolor=SURFACE)
