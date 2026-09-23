@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import calendar
 import re
 import sys
 from datetime import date, datetime, timedelta
@@ -16,6 +17,7 @@ from common import (
     GASES_CSV_PATH,
     IST,
     README_PATH,
+    ROOT,
     aqi_category,
     NAQI_CATEGORIES,
     NAQI_HEALTH,
@@ -308,8 +310,10 @@ def render_section(
     daily_rows: list[dict[str, str]] | None = None,
     gas_rows: list[dict[str, str]] | None = None,
     as_of: date | None = None,
+    report_months: list[str] | None = None,
 ) -> str:
-    """as_of: today's IST date, to flag stale data (None skips the check)."""
+    """as_of: today's IST date, to flag stale data (None skips the check).
+    report_months: 'YYYY-MM' of existing reports/ files, linked at the end."""
     if not rows:
         body = "_No data collected yet — the first snapshot arrives with the next scheduled run._"
         return f"{START}\n{body}\n{END}"
@@ -346,6 +350,12 @@ def render_section(
     lines += render_summary(daily_rows or [])
     lines += render_india_summary(daily_rows or [], gas_rows or [])
     lines += ["", f"![US AQI trend by city]({CHART_URL})"]
+    if report_months:
+        links = " · ".join(
+            f"[{calendar.month_abbr[int(m[5:])]} {m[:4]}](reports/{m}.md)"
+            for m in sorted(report_months, reverse=True)
+        )
+        lines += ["", f"**Monthly reports:** {links}"]
     return f"{START}\n" + "\n".join(lines) + f"\n{END}"
 
 
@@ -355,11 +365,12 @@ def update_readme(
     daily_rows: list[dict[str, str]] | None = None,
     gas_rows: list[dict[str, str]] | None = None,
     as_of: date | None = None,
+    report_months: list[str] | None = None,
 ) -> str:
     pattern = re.compile(re.escape(START) + r".*?" + re.escape(END), re.DOTALL)
     if not pattern.search(readme_text):
         raise ValueError(f"README is missing the {START} ... {END} markers")
-    section = render_section(rows, daily_rows, gas_rows, as_of)
+    section = render_section(rows, daily_rows, gas_rows, as_of, report_months)
     return pattern.sub(lambda _: section, readme_text, count=1)
 
 
@@ -368,6 +379,7 @@ def main(
     csv_path: Path = CSV_PATH,
     daily_csv_path: Path = DAILY_CSV_PATH,
     gases_csv_path: Path = GASES_CSV_PATH,
+    reports_dir: Path = ROOT / "reports",
 ) -> int:
     try:
         new_text = update_readme(
@@ -376,6 +388,7 @@ def main(
             read_rows(daily_csv_path),
             read_rows(gases_csv_path),
             as_of=datetime.now(IST).date(),
+            report_months=[p.stem for p in sorted(reports_dir.glob("????-??.md"))],
         )
     except (OSError, ValueError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)

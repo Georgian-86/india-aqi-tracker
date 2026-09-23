@@ -10,7 +10,7 @@ FIXTURE = Path(__file__).parent / "fixtures" / "open_meteo_response.json"
 REPO = Path(__file__).resolve().parent.parent
 # Real outputs. The daily workflow runs pytest right before committing these,
 # so a test that writes here would publish fixture data as real data.
-PROTECTED = [REPO / "data", REPO / "charts", REPO / "README.md"]
+PROTECTED = [REPO / "data", REPO / "charts", REPO / "reports", REPO / "README.md"]
 
 
 @pytest.fixture
