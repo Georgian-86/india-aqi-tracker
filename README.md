@@ -71,7 +71,7 @@ Pune and Ahmedabad**, once a day and commits the result to this repository. The 
 
 ![US AQI trend by city](https://raw.githubusercontent.com/Georgian-86/india-aqi-tracker/charts/aqi_trend.png)
 
-**Monthly reports:** [Aug 2026](reports/2026-08.md) · [Jul 2026](reports/2026-07.md)
+**Monthly reports:** [Aug 2026](reports/2026-08.md) · [Jul 2026](reports/2026-07.md) · [Jun 2026](reports/2026-06.md) · [May 2026](reports/2026-05.md) · [Apr 2026](reports/2026-04.md) · [Mar 2026](reports/2026-03.md) · [Feb 2026](reports/2026-02.md) · [Jan 2026](reports/2026-01.md) · [Dec 2025](reports/2025-12.md) · [Nov 2025](reports/2025-11.md) · [Oct 2025](reports/2025-10.md) · [Sep 2025](reports/2025-09.md) · [Aug 2025](reports/2025-08.md) · [Jul 2025](reports/2025-07.md) · [Jun 2025](reports/2025-06.md) · [May 2025](reports/2025-05.md) · [Apr 2025](reports/2025-04.md) · [Mar 2025](reports/2025-03.md)
 <!-- AQI:END -->
 
 AQI categories follow the US EPA scale:
