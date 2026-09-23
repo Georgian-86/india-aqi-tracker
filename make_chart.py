@@ -45,6 +45,9 @@ TEXT_SECONDARY = "#52514e"
 GRID = "#e4e3df"
 BAND = "#f1f0ec"
 MIN_WINDOW_DAYS = 7  # a zero-width date axis renders garbage ticks
+# Years of daily lines for 8 cities are unreadable; older history lives in
+# the monthly reports.
+MAX_WINDOW_DAYS = 365
 MAX_MARKER_POINTS = 60  # beyond this, markers just clutter the lines
 # A dust storm can push one city's daily mean past 600 and squash every other
 # line into the bottom of the chart. Cap the axis instead, and label peaks.
@@ -93,6 +96,18 @@ def load_series(csv_path: Path, column: str = "us_aqi") -> dict[str, list[tuple[
     return series
 
 
+def recent(
+    series: dict[str, list[tuple[date, float]]], days: int = MAX_WINDOW_DAYS
+) -> dict[str, list[tuple[date, float]]]:
+    """Keep only the last `days` days (relative to the newest point)."""
+    if not series:
+        return series
+    last = max(d for pts in series.values() for d, _ in pts)
+    cutoff = last - timedelta(days=days - 1)
+    trimmed = {city: [(d, v) for d, v in pts if d >= cutoff] for city, pts in series.items()}
+    return {city: pts for city, pts in trimmed.items() if pts}
+
+
 def render(
     csv_path: Path = CSV_PATH,
     out_path: Path = CHART_PATH,
@@ -106,6 +121,7 @@ def render(
         series = load_series(csv_path)
         title = "Daily US AQI snapshot — Indian metros"
         note = "one model reading per day"
+    series = recent(series)
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
     fig, ax = plt.subplots(figsize=(10, 5), dpi=120)
