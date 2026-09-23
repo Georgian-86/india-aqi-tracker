@@ -17,6 +17,9 @@ from common import (
     IST,
     README_PATH,
     aqi_category,
+    NAQI_CATEGORIES,
+    NAQI_SEVERE,
+    Naqi,
     naqi,
     read_rows,
 )
@@ -138,18 +141,24 @@ def render_daily(
         "",
         "<sub>¹ India's National AQI (CPCB) scale: Good ≤ 50 · Satisfactory ≤ 100 · "
         "Moderate ≤ 200 · Poor ≤ 300 · Very Poor ≤ 400 · Severe. Computed from the day's "
-        "mean PM2.5, PM10 and NO₂ and maximum 8-hour O₃ (4 of CPCB's 8 pollutants), and "
-        "labelled with the pollutant that sets it. ² marks a day with fewer than the 3 "
-        "pollutants CPCB requires. It often reads better than the US figure because US "
-        "breakpoints are stricter (PM2.5 is \"Good\" only up to 9 µg/m³ in the US, vs 30 "
-        "in India).</sub>",
+        "mean PM2.5, PM10 and NO₂ (3 of CPCB's 8 pollutants, its minimum), labelled with "
+        "the pollutant that sets it. ² marks a day with fewer than 3. Ozone is left out: "
+        "the CAMS model's surface ozone runs far above ground measurements over India, "
+        "and would make O₃ the main pollutant almost every day. The India figure often "
+        "reads better than the US one because US breakpoints are stricter (PM2.5 is "
+        "\"Good\" only up to 9 µg/m³ in the US, vs 30 in India).</sub>",
     ]
     return lines
 
 
+def india_result(row: dict[str, str], gas: dict[str, str]) -> Naqi:
+    """India AQI for one city-day, deliberately without O₃ (see README caveats:
+    CAMS surface ozone is strongly biased high over India)."""
+    return naqi(row.get("pm2_5_mean"), row.get("pm10_mean"), gas.get("no2_mean"))
+
+
 def _india_aqi(row: dict[str, str], gas: dict[str, str]) -> str:
-    result = naqi(row.get("pm2_5_mean"), row.get("pm10_mean"),
-                  gas.get("no2_mean"), gas.get("o3_max8h"))
+    result = india_result(row, gas)
     if result.category == "N/A":
         return "–"
     value = "Severe (401+)" if result.index is None else f"{result.index:.0f} {result.category}"
@@ -204,6 +213,48 @@ def render_summary(daily_rows: list[dict[str, str]]) -> list[str]:
     return lines
 
 
+def render_india_summary(
+    daily_rows: list[dict[str, str]], gas_rows: list[dict[str, str]]
+) -> list[str]:
+    """Days per CPCB category and the main pollutants per city, last 30 days."""
+    days_present = sorted({r["date"] for r in daily_rows})
+    if len(days_present) < 2:
+        return []
+    end = days_present[-1]
+    start = (date.fromisoformat(end) - timedelta(days=SUMMARY_DAYS - 1)).isoformat()
+    gases = {(g["date"], g["city"]): g for g in gas_rows}
+    categories = [label for _, label in NAQI_CATEGORIES] + [NAQI_SEVERE]
+
+    lines = [
+        "",
+        f"**Last {SUMMARY_DAYS} days on India's scale** ({start} to {end}, CPCB categories "
+        "from PM2.5, PM10 and NO₂): days in each category, and which pollutant set the "
+        "index how often",
+        "",
+        f"| City | {' | '.join(categories)} | Main pollutants |",
+        "|---|" + "--:|" * len(categories) + "---|",
+    ]
+    for city, _, _ in CITIES:
+        results = [
+            india_result(r, gases.get((r["date"], city), {}))
+            for r in daily_rows
+            if r["city"] == city and start <= r["date"] <= end
+        ]
+        results = [res for res in results if res.category != "N/A"]
+        if not results:
+            continue
+        counts = {c: sum(res.category == c for res in results) for c in categories}
+        cells = " | ".join(str(counts[c]) if counts[c] else "·" for c in categories)
+        prominent: dict[str, int] = {}
+        for res in results:
+            prominent[res.prominent] = prominent.get(res.prominent, 0) + 1
+        main = " · ".join(
+            f"{name} {n}" for name, n in sorted(prominent.items(), key=lambda kv: (-kv[1], kv[0]))
+        )
+        lines.append(f"| {city} | {cells} | {main} |")
+    return lines
+
+
 def render_section(
     rows: list[dict[str, str]],
     daily_rows: list[dict[str, str]] | None = None,
@@ -243,6 +294,7 @@ def render_section(
     ]
     lines += render_daily(daily_rows or [], gas_rows)
     lines += render_summary(daily_rows or [])
+    lines += render_india_summary(daily_rows or [], gas_rows or [])
     lines += ["", f"![US AQI trend by city]({CHART_URL})"]
     return f"{START}\n" + "\n".join(lines) + f"\n{END}"
 

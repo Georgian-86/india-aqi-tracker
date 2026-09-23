@@ -257,7 +257,8 @@ def test_daily_table_shows_india_aqi(csv_path):
     assert "| Delhi | 172 | 🔴 Unhealthy | 206 | 172 (1d) | 68.8 | 129 Moderate · PM2.5² |" in out
     assert "| Severe (401+) · PM2.5² |" in out
     assert "| Chennai | 70 | 🟡 Moderate | 200 | 70 (1d) | – | – |" in out
-    assert "4 of CPCB's 8 pollutants" in out
+    assert "3 of CPCB's 8 pollutants, its minimum" in out
+    assert "Ozone is left out" in out
 
 
 def test_daily_table_uses_gases_when_available(csv_path):
@@ -267,4 +268,39 @@ def test_daily_table_uses_gases_when_available(csv_path):
              {"date": "2026-09-21", "city": "Chennai", "no2_mean": "999",  # other day: ignored
               "o3_max8h": "999", "fetched_at_utc": "x"}]
     out = update_readme.update_readme(README, read_rows(csv_path), daily, gases)
-    assert "| 17 | 129 Moderate · O₃ |" in out  # ozone dominates, 4 pollutants, no ²
+    # O₃ 120 would give 129 "Moderate · O₃"; it's excluded (CAMS ozone bias), so
+    # PM2.5 (28.3) beats NO₂ (25.0) and PM10 (18.3). 3 pollutants: complete, no ².
+    assert "| 17 | 28 Good · PM2.5 |" in out
+
+
+def gas_row(day, city, no2, o3="500.0"):
+    return {"date": day, "city": city, "no2_mean": no2, "o3_max8h": o3, "fetched_at_utc": "x"}
+
+
+def test_india_result_ignores_ozone():
+    row = {"pm2_5_mean": "20.0", "pm10_mean": "30.0"}
+    result = update_readme.india_result(row, gas_row("d", "c", "10.0", o3="700.0"))
+    assert (result.category, result.prominent, result.complete) == ("Good", "PM2.5", True)
+
+
+def test_india_summary_counts_and_main_pollutants(csv_path):
+    daily, gases = [], []
+    # Delhi: 3 PM2.5-driven days (Good, Moderate, Very Poor) + 1 NO₂-driven day.
+    for d, pm25, no2 in [("16", "20.0", "5.0"), ("17", "70.0", "5.0"),
+                         ("18", "200.0", "5.0"), ("19", "5.0", "100.0")]:
+        daily.append({**daily_row(f"2026-09-{d}", "Delhi", "100.0", pm25=pm25), "pm10_mean": "10.0"})
+        gases.append(gas_row(f"2026-09-{d}", "Delhi", no2))
+    daily.append({**daily_row("2026-09-19", "Chennai", "50.0", pm25="10.0"), "pm10_mean": "80.0"})
+    out = update_readme.update_readme(README, read_rows(csv_path), daily, gases)
+    assert "**Last 30 days on India's scale** (2026-08-21 to 2026-09-19" in out
+    #            Good Sat Mod Poor VPoor Severe | main pollutants
+    assert "| Delhi | 1 | · | 2 | · | 1 | · | PM2.5 3 · NO₂ 1 |" in out
+    # Chennai has no gas row: PM only, still counted; PM10 (65) beats PM2.5 (17).
+    assert "| Chennai | · | 1 | · | · | · | · | PM10 1 |" in out
+    assert out.index("Last 30 days**") < out.index("India's scale") < out.index("![US AQI")
+
+
+def test_india_summary_omitted_with_single_day(csv_path):
+    daily = [daily_row("2026-09-22", "Delhi", "100.0")]
+    out = update_readme.update_readme(README, read_rows(csv_path), daily, [])
+    assert "India's scale" not in out
