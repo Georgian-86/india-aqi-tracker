@@ -67,4 +67,41 @@ def test_naqi_negative_concentration_rejected():
     ],
 )
 def test_naqi_takes_worse_pollutant(pm25, pm10, expected):
-    assert naqi(pm25, pm10)[1] == expected
+    assert naqi(pm25, pm10).category == expected
+
+
+@pytest.mark.parametrize(
+    "pollutant, conc, expected",
+    [
+        ("no2", 40, 50), ("no2", 80, 100), ("no2", 180, 200), ("no2", 280, 300),
+        ("no2", 400, 400), ("o3_8h", 50, 50), ("o3_8h", 100, 100), ("o3_8h", 168, 200),
+        ("o3_8h", 208, 300), ("o3_8h", 748, 400),
+    ],
+)
+def test_naqi_gas_band_edges(pollutant, conc, expected):
+    assert naqi_subindex(pollutant, conc) == pytest.approx(expected)
+
+
+def test_naqi_ozone_can_be_prominent():
+    # Chennai-like day: clean PM, afternoon ozone high enough to dominate.
+    result = naqi("17.0", "18.3", "20.0", "120.0")
+    assert result.prominent == "O₃" and result.category == "Moderate"
+    assert result.index == pytest.approx(100 + 20 * 100 / 68)
+    assert result.complete
+
+
+def test_naqi_reports_prominent_pm():
+    result = naqi("68.8", "129.9", "40.0", "60.0")
+    assert (result.prominent, result.category, result.pollutants) == ("PM2.5", "Moderate", 4)
+
+
+def test_naqi_completeness_rule():
+    assert not naqi("20", "30").complete  # 2 pollutants
+    assert naqi("20", "30", "10").complete  # 3, including PM
+    # Gases alone can't make an AQI: PM is required.
+    assert naqi(None, "", "300", "300").category == "N/A"
+
+
+def test_naqi_severe_names_the_pollutant():
+    result = naqi("20", "30", "20", "800")
+    assert (result.index, result.category, result.prominent) == (None, "Severe", "O₃")

@@ -19,6 +19,7 @@ def run_main(path, outcomes, now=NOW, daily_path=None):
     return fetch.main(
         csv_path=path,
         daily_csv_path=daily_path,
+        gases_csv_path=path.with_name("aqi_daily_gases.csv"),
         session=session,
         sleep=lambda s: None,
         now=now,
@@ -35,7 +36,7 @@ def test_build_params_single_request_for_all_cities():
     assert params["latitude"].split(",") == [str(lat) for _, lat, _ in CITIES]
     assert params["longitude"].split(",") == [str(lon) for _, _, lon in CITIES]
     assert params["current"] == "us_aqi,pm2_5,pm10,nitrogen_dioxide,ozone"
-    assert params["hourly"] == "us_aqi,pm2_5,pm10"
+    assert params["hourly"] == "us_aqi,pm2_5,pm10,nitrogen_dioxide,ozone"
     assert (params["past_days"], params["forecast_days"]) == ("1", "1")
     assert fetch.build_params(past_days=92)["past_days"] == "92"
     assert params["timezone"] == "Asia/Kolkata"
@@ -300,6 +301,7 @@ def test_main_backfill_then_daily_run_dedupes(tmp_path, payload):
     path, daily = tmp_path / "aqi.csv", tmp_path / "aqi_daily.csv"
     session = FakeSession([make_response(200, with_history(payload, 5))])
     assert fetch.main(csv_path=path, daily_csv_path=daily, session=session,
+                      gases_csv_path=tmp_path / "gases.csv",
                       sleep=lambda s: None, now=NOW, past_days=5) == 0
     assert session.calls[0]["params"]["past_days"] == "5"
     assert len(read_csv(daily)) == 1 + 25
@@ -321,3 +323,41 @@ def test_cli_passes_past_days(monkeypatch):
     assert seen == {"past_days": 92}
     assert fetch.cli([]) == 0
     assert seen == {"past_days": 1}
+
+
+def test_parse_daily_gas_stats(payload):
+    rows, _ = fetch.parse_daily(payload, FETCHED_AT)
+    delhi = rows[0]
+    hourly = payload[0]["hourly"]
+    no2 = hourly["nitrogen_dioxide"][:24]
+    o3 = hourly["ozone"][:24]
+    assert delhi["no2_mean"] == f"{sum(no2) / 24:.1f}"
+    best = max(sum(o3[i:i + 8]) / 8 for i in range(17))
+    assert delhi["o3_max8h"] == f"{best:.1f}"
+
+
+def test_o3_window_needs_complete_hours(payload):
+    for i in range(0, 24, 7):  # a gap every 7 hours: no complete 8 h window
+        payload[0]["hourly"]["ozone"][i] = None
+    rows, _ = fetch.parse_daily(payload, FETCHED_AT)
+    assert rows[0]["o3_max8h"] == ""
+
+
+def test_main_writes_gases_csv_separately(tmp_path, payload):
+    path = tmp_path / "aqi.csv"
+    assert run_main(path, [make_response(200, payload)]) == 0
+    daily = read_csv(tmp_path / "aqi_daily.csv")
+    gases = read_csv(tmp_path / "aqi_daily_gases.csv")
+    assert daily[0] == DAILY_COLUMNS  # unchanged schema, gas fields not leaked
+    assert gases[0] == ["date", "city", "no2_mean", "o3_max8h", "fetched_at_utc"]
+    assert len(gases) == 6 and gases[1][:2] == ["2026-09-22", "Delhi"]
+
+
+def test_backfill_fills_gases_for_days_already_in_daily_csv(tmp_path, payload):
+    # Mirrors production: aqi_daily.csv already has the day, gases file doesn't.
+    path, daily = tmp_path / "aqi.csv", tmp_path / "aqi_daily.csv"
+    rows, _ = fetch.parse_daily(payload, FETCHED_AT)
+    fetch.append_rows(daily, rows, DAILY_COLUMNS)
+    assert run_main(path, [make_response(200, payload)], daily_path=daily) == 0
+    assert len(read_csv(daily)) == 6  # nothing duplicated
+    assert len(read_csv(tmp_path / "aqi_daily_gases.csv")) == 6  # gases filled in

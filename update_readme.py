@@ -13,6 +13,7 @@ from common import (
     HAZARDOUS,
     CSV_PATH,
     DAILY_CSV_PATH,
+    GASES_CSV_PATH,
     IST,
     README_PATH,
     aqi_category,
@@ -96,13 +97,16 @@ def _previous_reading(
     return max(earlier, key=lambda r: r["date"]) if earlier else None
 
 
-def render_daily(daily_rows: list[dict[str, str]]) -> list[str]:
+def render_daily(
+    daily_rows: list[dict[str, str]], gas_rows: list[dict[str, str]] | None = None
+) -> list[str]:
     """Table of the latest completed day's full-day stats, plus a 7-day mean."""
     if not daily_rows:
         return []
     day = max(r["date"] for r in daily_rows)
     week_start = (date.fromisoformat(day) - timedelta(days=6)).isoformat()
     latest = {r["city"]: r for r in daily_rows if r["date"] == day}
+    gases = {r["city"]: r for r in (gas_rows or []) if r["date"] == day}
 
     lines = [
         "",
@@ -110,7 +114,7 @@ def render_daily(daily_rows: list[dict[str, str]]) -> list[str]:
         "unlike the single snapshot above)",
         "",
         "| City | Mean AQI | Category | Peak AQI | 7-day mean | Mean PM2.5 (µg/m³) "
-        "| India AQI (PM)¹ |",
+        "| India AQI¹ |",
         "|---|--:|---|--:|--:|--:|---|",
     ]
     for city, _, _ in CITIES:
@@ -128,27 +132,28 @@ def render_daily(daily_rows: list[dict[str, str]]) -> list[str]:
         lines.append(
             f"| {city} | {float(r['us_aqi_mean']):.0f} | {CATEGORY_ICON[cat]} {cat} | "
             f"{_num(r['us_aqi_max'])} | {week_mean} | {_num(r['pm2_5_mean'])} | "
-            f"{_india_aqi(r)} |"
+            f"{_india_aqi(r, gases.get(city, {}))} |"
         )
     lines += [
         "",
-        "<sub>¹ India's National AQI (CPCB) scale, computed from the day's mean PM2.5 and "
-        "PM10: Good ≤ 50 · Satisfactory ≤ 100 · Moderate ≤ 200 · Poor ≤ 300 · Very Poor ≤ 400 "
-        "· Severe. Official NAQI uses at least three pollutants, so this is a PM-only "
-        "approximation. It often reads better than the US figure for two reasons: stricter "
-        "US breakpoints (PM2.5 is \"Good\" only up to 9 µg/m³ in the US, vs 30 in India), "
-        "and the US figure also counts ozone and NO₂.</sub>",
+        "<sub>¹ India's National AQI (CPCB) scale: Good ≤ 50 · Satisfactory ≤ 100 · "
+        "Moderate ≤ 200 · Poor ≤ 300 · Very Poor ≤ 400 · Severe. Computed from the day's "
+        "mean PM2.5, PM10 and NO₂ and maximum 8-hour O₃ (4 of CPCB's 8 pollutants), and "
+        "labelled with the pollutant that sets it. ² marks a day with fewer than the 3 "
+        "pollutants CPCB requires. It often reads better than the US figure because US "
+        "breakpoints are stricter (PM2.5 is \"Good\" only up to 9 µg/m³ in the US, vs 30 "
+        "in India).</sub>",
     ]
     return lines
 
 
-def _india_aqi(row: dict[str, str]) -> str:
-    index, category = naqi(row.get("pm2_5_mean"), row.get("pm10_mean"))
-    if category == "N/A":
+def _india_aqi(row: dict[str, str], gas: dict[str, str]) -> str:
+    result = naqi(row.get("pm2_5_mean"), row.get("pm10_mean"),
+                  gas.get("no2_mean"), gas.get("o3_max8h"))
+    if result.category == "N/A":
         return "–"
-    if index is None:
-        return "Severe (401+)"
-    return f"{index:.0f} {category}"
+    value = "Severe (401+)" if result.index is None else f"{result.index:.0f} {result.category}"
+    return f"{value} · {result.prominent}{'' if result.complete else '²'}"
 
 
 SUMMARY_DAYS = 30
@@ -200,7 +205,9 @@ def render_summary(daily_rows: list[dict[str, str]]) -> list[str]:
 
 
 def render_section(
-    rows: list[dict[str, str]], daily_rows: list[dict[str, str]] | None = None
+    rows: list[dict[str, str]],
+    daily_rows: list[dict[str, str]] | None = None,
+    gas_rows: list[dict[str, str]] | None = None,
 ) -> str:
     if not rows:
         body = "_No data collected yet — the first snapshot arrives with the next scheduled run._"
@@ -234,7 +241,7 @@ def render_section(
         "<sub>vs prev.: change since the previous snapshot; “–” when there is none or the "
         "two were taken more than 3 h apart in time of day (AQI has a daily cycle).</sub>",
     ]
-    lines += render_daily(daily_rows or [])
+    lines += render_daily(daily_rows or [], gas_rows)
     lines += render_summary(daily_rows or [])
     lines += ["", f"![US AQI trend by city]({CHART_URL})"]
     return f"{START}\n" + "\n".join(lines) + f"\n{END}"
@@ -244,11 +251,12 @@ def update_readme(
     readme_text: str,
     rows: list[dict[str, str]],
     daily_rows: list[dict[str, str]] | None = None,
+    gas_rows: list[dict[str, str]] | None = None,
 ) -> str:
     pattern = re.compile(re.escape(START) + r".*?" + re.escape(END), re.DOTALL)
     if not pattern.search(readme_text):
         raise ValueError(f"README is missing the {START} ... {END} markers")
-    section = render_section(rows, daily_rows)
+    section = render_section(rows, daily_rows, gas_rows)
     return pattern.sub(lambda _: section, readme_text, count=1)
 
 
@@ -256,12 +264,14 @@ def main(
     readme_path: Path = README_PATH,
     csv_path: Path = CSV_PATH,
     daily_csv_path: Path = DAILY_CSV_PATH,
+    gases_csv_path: Path = GASES_CSV_PATH,
 ) -> int:
     try:
         new_text = update_readme(
             readme_path.read_text(encoding="utf-8"),
             read_rows(csv_path),
             read_rows(daily_csv_path),
+            read_rows(gases_csv_path),
         )
     except (OSError, ValueError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
