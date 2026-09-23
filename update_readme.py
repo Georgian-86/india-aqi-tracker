@@ -16,6 +16,7 @@ from common import (
     IST,
     README_PATH,
     aqi_category,
+    naqi,
     read_rows,
 )
 
@@ -108,8 +109,9 @@ def render_daily(daily_rows: list[dict[str, str]]) -> list[str]:
         f"**Full day {day}** (mean of 24 hourly values — comparable across days, "
         "unlike the single snapshot above)",
         "",
-        "| City | Mean AQI | Category | Peak AQI | 7-day mean | Mean PM2.5 (µg/m³) |",
-        "|---|--:|---|--:|--:|--:|",
+        "| City | Mean AQI | Category | Peak AQI | 7-day mean | Mean PM2.5 (µg/m³) "
+        "| India AQI (PM)¹ |",
+        "|---|--:|---|--:|--:|--:|---|",
     ]
     for city, _, _ in CITIES:
         r = latest.get(city)
@@ -125,9 +127,28 @@ def render_daily(daily_rows: list[dict[str, str]]) -> list[str]:
         cat = aqi_category(r["us_aqi_mean"])
         lines.append(
             f"| {city} | {float(r['us_aqi_mean']):.0f} | {CATEGORY_ICON[cat]} {cat} | "
-            f"{_num(r['us_aqi_max'])} | {week_mean} | {_num(r['pm2_5_mean'])} |"
+            f"{_num(r['us_aqi_max'])} | {week_mean} | {_num(r['pm2_5_mean'])} | "
+            f"{_india_aqi(r)} |"
         )
+    lines += [
+        "",
+        "<sub>¹ India's National AQI (CPCB) scale, computed from the day's mean PM2.5 and "
+        "PM10: Good ≤ 50 · Satisfactory ≤ 100 · Moderate ≤ 200 · Poor ≤ 300 · Very Poor ≤ 400 "
+        "· Severe. Official NAQI uses at least three pollutants, so this is a PM-only "
+        "approximation. It often reads better than the US figure for two reasons: stricter "
+        "US breakpoints (PM2.5 is \"Good\" only up to 9 µg/m³ in the US, vs 30 in India), "
+        "and the US figure also counts ozone and NO₂.</sub>",
+    ]
     return lines
+
+
+def _india_aqi(row: dict[str, str]) -> str:
+    index, category = naqi(row.get("pm2_5_mean"), row.get("pm10_mean"))
+    if category == "N/A":
+        return "–"
+    if index is None:
+        return "Severe (401+)"
+    return f"{index:.0f} {category}"
 
 
 SUMMARY_DAYS = 30
