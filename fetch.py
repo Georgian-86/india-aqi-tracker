@@ -26,6 +26,8 @@ from common import (
     CSV_PATH,
     DAILY_COLUMNS,
     DAILY_CSV_PATH,
+    GAS_COLUMNS,
+    GASES_CSV_PATH,
     IST,
     read_rows,
 )
@@ -33,7 +35,8 @@ from common import (
 API_URL = "https://air-quality-api.open-meteo.com/v1/air-quality"
 TIMEZONE = "Asia/Kolkata"
 CURRENT_VARS = ["us_aqi", "pm2_5", "pm10", "nitrogen_dioxide", "ozone"]
-HOURLY_VARS = ["us_aqi", "pm2_5", "pm10"]
+HOURLY_VARS = ["us_aqi", "pm2_5", "pm10", "nitrogen_dioxide", "ozone"]
+O3_WINDOW_HOURS = 8
 # Skip a city's daily stats (and fail) if fewer hours than this have data.
 MIN_DAILY_HOURS = 20
 # Open-Meteo serves at most this many past days; used for one-off backfills.
@@ -206,6 +209,9 @@ def _day_stats(
     aqi, pm25, pm10 = series("us_aqi"), series("pm2_5"), series("pm10")
     if len(aqi) < MIN_DAILY_HOURS:
         return None
+    no2 = series("nitrogen_dioxide")
+    ozone = hourly.get("ozone") or []
+    ozone_by_hour = [ozone[i] if i < len(ozone) else None for i in idx]  # keeps gaps
     return {
         "date": day,
         "city": city,
@@ -214,8 +220,21 @@ def _day_stats(
         "us_aqi_max": _fmt(max(aqi)),
         "pm2_5_mean": _mean(pm25) if pm25 else "",
         "pm10_mean": _mean(pm10) if pm10 else "",
+        "no2_mean": _mean(no2) if len(no2) >= MIN_DAILY_HOURS else "",
+        "o3_max8h": _max_window_mean(ozone_by_hour),
         "fetched_at_utc": fetched_at_utc,
     }
+
+
+def _max_window_mean(values: list[float | None], window: int = O3_WINDOW_HOURS) -> str:
+    """Highest mean over `window` consecutive hours within the day, ignoring
+    any window with a missing hour; "" if there is no complete window."""
+    means = [
+        sum(chunk) / window
+        for start in range(len(values) - window + 1)
+        if None not in (chunk := values[start:start + window])
+    ]
+    return f"{max(means):.1f}" if means else ""
 
 
 def append_rows(
@@ -230,7 +249,8 @@ def append_rows(
     path.parent.mkdir(parents=True, exist_ok=True)
     write_header = not path.exists() or path.stat().st_size == 0
     with path.open("a", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=columns)
+        # Rows may carry fields for another file (gas stats); keep only ours.
+        writer = csv.DictWriter(f, fieldnames=columns, extrasaction="ignore")
         if write_header:
             writer.writeheader()
         writer.writerows(new_rows)
@@ -240,6 +260,7 @@ def append_rows(
 def main(
     csv_path: Path = CSV_PATH,
     daily_csv_path: Path = DAILY_CSV_PATH,
+    gases_csv_path: Path = GASES_CSV_PATH,
     session: requests.Session | None = None,
     sleep=time.sleep,
     now: datetime | None = None,
@@ -274,6 +295,9 @@ def main(
             f"max={r['us_aqi_max']} ({r['hours']}h)"
         )
     print(f"Wrote {daily_written} new row(s) to {daily_csv_path}")
+    gas_rows = [r for r in daily_rows if r["no2_mean"] or r["o3_max8h"]]
+    gas_written = append_rows(gases_csv_path, gas_rows, GAS_COLUMNS)
+    print(f"Wrote {gas_written} new row(s) to {gases_csv_path}")
 
     failed = False
     if missing:

@@ -8,9 +8,15 @@ Bengaluru, Kolkata and Chennai from the Open-Meteo Air Quality API (CAMS data) i
 
 - `common.py` holds the single source of truth: `CITIES` (name, lat, lon, **order matters**),
   `COLUMNS`, file paths, `aqi_category()` (US EPA scale), `naqi()` / `naqi_subindex()`
-  (India CPCB scale, PM2.5 + PM10 only, `NAQI_BANDS` as data), and `read_rows()`. India AQI
-  is computed at render time from stored means. Don't add it as a CSV column. Above the
-  last CPCB band it returns `None` ("Severe"); never extrapolate a number.
+  (India CPCB scale for PM2.5, PM10, NO₂ 24 h and O₃ 8 h, with `NAQI_BANDS` as data;
+  returns a `Naqi` with the prominent pollutant and a `complete` flag for ≥ 3 pollutants),
+  and `read_rows()`. India AQI is computed at render time from stored means. Don't add it as
+  a CSV column. Above the last CPCB band it returns `index=None` ("Severe"); never
+  extrapolate a number.
+- Gas stats (`no2_mean`, `o3_max8h`) go to `data/aqi_daily_gases.csv` (`GAS_COLUMNS`), never
+  as new columns in `aqi_daily.csv`. Adding columns would mean rewriting its header, and it
+  is append-only. `append_rows` uses `extrasaction="ignore"`, so one row dict can feed
+  both files. Follow the same pattern for any future per-day fields.
 - `fetch.py` makes one API call for all cities (`current` plus `hourly` with
   `past_days=1&forecast_days=1`). It appends the snapshot to `data/aqi.csv` and yesterday's
   full-day stats (`parse_daily`) to `data/aqi_daily.csv` (`DAILY_COLUMNS`). Both are deduped

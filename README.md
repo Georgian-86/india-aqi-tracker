@@ -24,15 +24,15 @@ day and commits the result to this repository. The git history *is* the database
 
 **Full day 2026-09-22** (mean of 24 hourly values — comparable across days, unlike the single snapshot above)
 
-| City | Mean AQI | Category | Peak AQI | 7-day mean | Mean PM2.5 (µg/m³) | India AQI (PM)¹ |
+| City | Mean AQI | Category | Peak AQI | 7-day mean | Mean PM2.5 (µg/m³) | India AQI¹ |
 |---|--:|---|--:|--:|--:|---|
-| Delhi | 172 | 🔴 Unhealthy | 206 | 157 | 68.8 | 129 Moderate |
-| Mumbai | 96 | 🟡 Moderate | 130 | 76 | 24.5 | 41 Good |
-| Bengaluru | 49 | 🟢 Good | 53 | 56 | 10.5 | 18 Good |
-| Kolkata | 64 | 🟡 Moderate | 72 | 104 | 10.1 | 17 Good |
-| Chennai | 73 | 🟡 Moderate | 84 | 93 | 17 | 28 Good |
+| Delhi | 172 | 🔴 Unhealthy | 206 | 157 | 68.8 | 129 Moderate · PM2.5² |
+| Mumbai | 96 | 🟡 Moderate | 130 | 76 | 24.5 | 41 Good · PM2.5² |
+| Bengaluru | 49 | 🟢 Good | 53 | 56 | 10.5 | 18 Good · PM2.5² |
+| Kolkata | 64 | 🟡 Moderate | 72 | 104 | 10.1 | 17 Good · PM2.5² |
+| Chennai | 73 | 🟡 Moderate | 84 | 93 | 17 | 28 Good · PM2.5² |
 
-<sub>¹ India's National AQI (CPCB) scale, computed from the day's mean PM2.5 and PM10: Good ≤ 50 · Satisfactory ≤ 100 · Moderate ≤ 200 · Poor ≤ 300 · Very Poor ≤ 400 · Severe. Official NAQI uses at least three pollutants, so this is a PM-only approximation. It often reads better than the US figure for two reasons: stricter US breakpoints (PM2.5 is "Good" only up to 9 µg/m³ in the US, vs 30 in India), and the US figure also counts ozone and NO₂.</sub>
+<sub>¹ India's National AQI (CPCB) scale: Good ≤ 50 · Satisfactory ≤ 100 · Moderate ≤ 200 · Poor ≤ 300 · Very Poor ≤ 400 · Severe. Computed from the day's mean PM2.5, PM10 and NO₂ and maximum 8-hour O₃ (4 of CPCB's 8 pollutants), and labelled with the pollutant that sets it. ² marks a day with fewer than the 3 pollutants CPCB requires. It often reads better than the US figure because US breakpoints are stricter (PM2.5 is "Good" only up to 9 µg/m³ in the US, vs 30 in India).</sub>
 
 **Last 30 days** (2026-08-24 to 2026-09-22, full-day means · 30 days of data): days in each category
 
@@ -137,6 +137,16 @@ reading:
 | `pm2_5_mean`, `pm10_mean` | mean concentration, µg/m³ |
 | `fetched_at_utc` | when it was fetched |
 
+`data/aqi_daily_gases.csv` holds gas statistics for the same days. It's a separate file so
+the append-only `aqi_daily.csv` never needs its header rewritten:
+
+| column | meaning |
+|---|---|
+| `date`, `city` | same key as `aqi_daily.csv` |
+| `no2_mean` | 24-hour mean NO₂, µg/m³ (blank if fewer than 20 hourly values) |
+| `o3_max8h` | highest 8-hour mean O₃ within the day, µg/m³; only windows with all 8 hours count |
+| `fetched_at_utc` | when it was fetched |
+
 ### Caveats
 
 - **Two AQI scales.** The main figures use the **US EPA AQI** (as reported by Open-Meteo). The
@@ -144,10 +154,10 @@ reading:
   and categories (Good, Satisfactory, Moderate, Poor, Very Poor, Severe). On 22 Sep 2026,
   Delhi was US 172 "Unhealthy" but India 129 "Moderate". The gap has two causes: the US
   breakpoints are stricter (PM2.5 is "Good" only up to 9 µg/m³, vs 30 in India), and the US
-  figure also includes ozone and NO₂, while the India figure here is computed from the day's
-  mean PM2.5 and PM10 only. Official NAQI requires at least three
-  pollutants, so treat it as a PM-driven approximation. "Severe (401+)" has no number,
-  because CPCB publishes no upper concentration for that band.
+  figure also includes ozone and NO₂. The India figure uses 4 of CPCB's 8 pollutants
+  (PM2.5, PM10, NO₂ and 8-hour O₃), with CPCB's averaging periods, and names the pollutant
+  that sets it. A day with fewer than the 3 pollutants CPCB requires is marked ². "Severe
+  (401+)" has no number, because CPCB publishes no upper concentration for that band.
 
 - Values are **model estimates** from the CAMS global forecast (~40 km grid), not readings
   from ground monitoring stations. They are good for trends and comparisons but can differ

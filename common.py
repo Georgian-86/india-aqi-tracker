@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import csv
+from dataclasses import dataclass
 from datetime import timedelta, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 CSV_PATH = ROOT / "data" / "aqi.csv"
 DAILY_CSV_PATH = ROOT / "data" / "aqi_daily.csv"
+GASES_CSV_PATH = ROOT / "data" / "aqi_daily_gases.csv"
 CHART_PATH = ROOT / "charts" / "aqi_trend.png"
 README_PATH = ROOT / "README.md"
 
@@ -30,6 +32,10 @@ DAILY_COLUMNS = [
     "date", "city", "hours", "us_aqi_mean", "us_aqi_max", "pm2_5_mean", "pm10_mean",
     "fetched_at_utc",
 ]
+# Gas statistics for the same days, kept in their own file so aqi_daily.csv
+# (append-only) never needs its header rewritten. CPCB averaging periods:
+# NO2 24-hour mean, O3 maximum 8-hour mean.
+GAS_COLUMNS = ["date", "city", "no2_mean", "o3_max8h", "fetched_at_utc"]
 
 # US EPA AQI breakpoints: (upper bound inclusive, label).
 AQI_CATEGORIES: list[tuple[int, str]] = [
@@ -58,8 +64,9 @@ def aqi_category(aqi: float | int | str | None) -> str:
     return HAZARDOUS
 
 
-# India's National AQI (CPCB, 2014). Bands per pollutant, 24-hour average
-# concentration in µg/m³: (conc_low, conc_high, index_low, index_high).
+# India's National AQI (CPCB, 2014). Bands per pollutant in µg/m³, as
+# (conc_low, conc_high, index_low, index_high). PM and NO2 use 24-hour
+# means; O3 uses the maximum 8-hour mean.
 # Interpolation is continuous across band edges. Above the last band is
 # "Severe" (401+); CPCB gives no upper concentration, so no number is invented.
 NAQI_BANDS: dict[str, list[tuple[float, float, int, int]]] = {
@@ -67,7 +74,14 @@ NAQI_BANDS: dict[str, list[tuple[float, float, int, int]]] = {
               (90, 120, 200, 300), (120, 250, 300, 400)],
     "pm10": [(0, 50, 0, 50), (50, 100, 50, 100), (100, 250, 100, 200),
              (250, 350, 200, 300), (350, 430, 300, 400)],
+    "no2": [(0, 40, 0, 50), (40, 80, 50, 100), (80, 180, 100, 200),
+            (180, 280, 200, 300), (280, 400, 300, 400)],
+    "o3_8h": [(0, 50, 0, 50), (50, 100, 50, 100), (100, 168, 100, 200),
+              (168, 208, 200, 300), (208, 748, 300, 400)],
 }
+NAQI_POLLUTANT_NAMES = {"pm2_5": "PM2.5", "pm10": "PM10", "no2": "NO₂", "o3_8h": "O₃"}
+# CPCB: an AQI needs at least 3 pollutants, one of them PM2.5 or PM10.
+NAQI_MIN_POLLUTANTS = 3
 NAQI_CATEGORIES: list[tuple[int, str]] = [
     (50, "Good"),
     (100, "Satisfactory"),
@@ -88,29 +102,42 @@ def naqi_subindex(pollutant: str, conc: float) -> float | None:
     return None
 
 
-def naqi(pm2_5: str | float | None, pm10: str | float | None) -> tuple[float | None, str]:
-    """PM-based India AQI: the worse of the PM2.5 and PM10 sub-indices.
+@dataclass(frozen=True)
+class Naqi:
+    index: float | None  # None when Severe (no number) or unavailable
+    category: str  # "N/A" when no PM value is available
+    prominent: str  # display name of the pollutant setting the index
+    pollutants: int  # how many sub-indices were available
 
-    Returns (index, category); index is None for Severe, and category is
-    "N/A" when neither concentration is available. Official NAQI needs at
-    least three pollutants, so this is an approximation driven by PM, which
-    dominates in Indian cities.
+    @property
+    def complete(self) -> bool:
+        """Meets CPCB's minimum of three pollutants, including PM."""
+        return self.pollutants >= NAQI_MIN_POLLUTANTS
+
+
+def naqi(
+    pm2_5: str | float | None,
+    pm10: str | float | None,
+    no2: str | float | None = None,
+    o3_8h: str | float | None = None,
+) -> Naqi:
+    """India AQI: the worst sub-index among the available pollutants.
+
+    PM2.5 or PM10 is required (CPCB), otherwise the result is "N/A".
     """
-    subs = []
-    for pollutant, value in (("pm2_5", pm2_5), ("pm10", pm10)):
-        if value in (None, ""):
-            continue
-        sub = naqi_subindex(pollutant, float(value))
-        if sub is None:
-            return None, NAQI_SEVERE
-        subs.append(sub)
-    if not subs:
-        return None, "N/A"
-    index = max(subs)
-    for upper, label in NAQI_CATEGORIES:
-        if index <= upper:
-            return index, label
-    return index, NAQI_SEVERE
+    values = {"pm2_5": pm2_5, "pm10": pm10, "no2": no2, "o3_8h": o3_8h}
+    present = {k: float(v) for k, v in values.items() if v not in (None, "")}
+    if not present.keys() & {"pm2_5", "pm10"}:
+        return Naqi(None, "N/A", "", len(present))
+    worst_key, worst = None, -1.0
+    for key, conc in present.items():
+        sub = naqi_subindex(key, conc)
+        if sub is None:  # Severe beats any number
+            return Naqi(None, NAQI_SEVERE, NAQI_POLLUTANT_NAMES[key], len(present))
+        if sub > worst:
+            worst_key, worst = key, sub
+    category = next((label for upper, label in NAQI_CATEGORIES if worst <= upper), NAQI_SEVERE)
+    return Naqi(worst, category, NAQI_POLLUTANT_NAMES[worst_key], len(present))
 
 
 def read_rows(path: Path = CSV_PATH) -> list[dict[str, str]]:

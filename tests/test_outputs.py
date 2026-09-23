@@ -158,7 +158,7 @@ def test_main_reads_both_csvs(tmp_path, payload):
     fetch.append_rows(snap, fetch.parse_payload(payload, "2026-09-23T03:17:00Z"))
     rows, _ = fetch.parse_daily(payload, "2026-09-23T03:17:00Z")
     fetch.append_rows(daily, rows, fetch.DAILY_COLUMNS)
-    assert update_readme.main(readme, snap, daily) == 0
+    assert update_readme.main(readme, snap, daily, tmp_path / "no_gases.csv") == 0
     text = readme.read_text()
     assert "**Full day 2026-09-22**" in text and "| Mumbai | 74 |" in text
 
@@ -252,8 +252,19 @@ def test_daily_table_shows_india_aqi(csv_path):
         {**daily_row("2026-09-22", "Chennai", "70.0", pm25="")},  # no PM data
     ]
     out = update_readme.update_readme(README, read_rows(csv_path), daily)
-    assert "| India AQI (PM)¹ |" in out
-    assert "| Delhi | 172 | 🔴 Unhealthy | 206 | 172 (1d) | 68.8 | 129 Moderate |" in out
-    assert "| Severe (401+) |" in out
+    assert "| India AQI¹ |" in out
+    # No gas data passed: PM only, flagged with ² (fewer than 3 pollutants).
+    assert "| Delhi | 172 | 🔴 Unhealthy | 206 | 172 (1d) | 68.8 | 129 Moderate · PM2.5² |" in out
+    assert "| Severe (401+) · PM2.5² |" in out
     assert "| Chennai | 70 | 🟡 Moderate | 200 | 70 (1d) | – | – |" in out
-    assert "PM-only approximation" in out
+    assert "4 of CPCB's 8 pollutants" in out
+
+
+def test_daily_table_uses_gases_when_available(csv_path):
+    daily = [{**daily_row("2026-09-22", "Chennai", "73.0", pm25="17.0"), "pm10_mean": "18.3"}]
+    gases = [{"date": "2026-09-22", "city": "Chennai", "no2_mean": "20.0",
+              "o3_max8h": "120.0", "fetched_at_utc": "x"},
+             {"date": "2026-09-21", "city": "Chennai", "no2_mean": "999",  # other day: ignored
+              "o3_max8h": "999", "fetched_at_utc": "x"}]
+    out = update_readme.update_readme(README, read_rows(csv_path), daily, gases)
+    assert "| 17 | 129 Moderate · O₃ |" in out  # ozone dominates, 4 pollutants, no ²
