@@ -43,8 +43,10 @@ Open-Meteo Air Quality API (CAMS data) into
   days. `as_of` (today's IST date, from `main()`) adds a staleness warning when today's
   snapshot is missing. Tests pass `as_of` explicitly or leave it None.
 - `alerts.py` manages GitHub issues for severe episodes, based on the latest `aqi_daily.csv`
-  day. `plan()` is pure: open at ≥ `ALERT_AQI` (201), comment daily, close below `CLEAR_AQI`
-  (151). Every post appends `<!-- aqi-alert-date:YYYY-MM-DD -->` to the issue body, which
+  day. `plan()` is pure: open at ≥ `ALERT_AQI` (301) for `MIN_STREAK` (3) days, comment
+  daily, close below `CLEAR_AQI` (201). These were tuned by replaying 572 days of real data
+  (see the alerts.py docstring). Re-check with a replay before changing them. Tests use
+  levels relative to the constants, never literal numbers. Every post appends `<!-- aqi-alert-date:YYYY-MM-DD -->` to the issue body, which
   is the source of truth for which days were reported (no double posts, no reopen for a
   reported day). Without `GITHUB_TOKEN`/`GITHUB_REPOSITORY` it does a dry run. The
   workflow needs `issues: write`.

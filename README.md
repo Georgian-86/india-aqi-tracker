@@ -117,10 +117,12 @@ Every day at **03:17 UTC (08:47 IST)** the GitHub Actions workflow
 6. commits `data: AQI snapshot YYYY-MM-DD` and pushes to `main`, but only if something
    actually changed.
 7. runs **`alerts.py`**, which manages **GitHub issues for severe episodes**. It opens one
-   (label `aqi-alert`) when a city's full-day mean reaches **Very Unhealthy (≥ 201)**,
-   comments once per day while it lasts, and closes it once the mean drops **below 151**.
-   The gap between the two thresholds keeps an issue from flapping open and closed. Replayed
-   over the backfilled June–September data, this would have opened 3 issues, all for Delhi.
+   (label `aqi-alert`) when a city's full-day mean is **Hazardous (≥ 301) for 3 days in a
+   row**, comments once per day while it lasts, and closes it once the mean drops **below
+   201**. The gap between the two thresholds keeps an issue from flapping open and closed.
+   The thresholds were chosen by replaying 572 days of real data (Feb 2025 to Sep 2026):
+   about 7 issues a year, all Delhi, open about 11% of the time, with a median episode of 3
+   days. A lower threshold would have kept Delhi's alert open more than half the year.
    Watch the repo (Custom → Issues) to be notified.
 
 A **backup run at 06:17 UTC (11:47 IST)** does the same thing. It adds nothing if the morning
@@ -217,6 +219,11 @@ the append-only `aqi_daily.csv` never needs its header rewritten:
   winter it's usually worst in the early morning), so snapshots are only comparable across
   days when taken at a similar time. That's why the README's "vs prev." column only compares
   readings taken within 3 hours of the same time of day. For trends, use `aqi_daily.csv`.
+- **Delhi's worst months in this data are March–June, not winter.** Monthly means peak
+  pre-monsoon (up to ~380 in May 2026), driven by PM10 (dust), while winter months are ~185–
+  205. Ground stations usually show the reverse, with PM2.5 smog in November–January as
+  Delhi's worst. So CAMS likely overestimates dust. Treat dust-season values as upper
+  bounds, especially for Delhi and Ahmedabad.
 - Open-Meteo extends US AQI above 500, the official top of the scale ("Beyond the AQI"), so
   dust-storm days can show values like 620. They're still categorised as Hazardous.
 - `us_aqi_mean` is the mean of Open-Meteo's hourly US AQI values. This is not the same as

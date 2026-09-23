@@ -17,6 +17,11 @@ on:
         type: string
         default: ""
 
+env:
+  # Flush output immediately so step logs are in the order things happened
+  # (buffered output once printed progress lines after the error that followed them).
+  PYTHONUNBUFFERED: "1"
+
 permissions:
   contents: write
   issues: write # alerts.py opens/comments/closes "aqi-alert" issues

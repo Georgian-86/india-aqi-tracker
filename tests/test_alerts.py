@@ -5,7 +5,7 @@ import requests
 
 import alerts
 import fetch
-from alerts import ALERT_AQI, CLEAR_AQI, CityDay
+from alerts import ALERT_AQI, CLEAR_AQI, MIN_STREAK, CityDay
 
 
 class FakeGitHub:
@@ -67,28 +67,49 @@ def run(tmp_path, gh, rows, name="d.csv"):
     return alerts.main(path, env=ENV, session=gh)
 
 
+# Levels defined relative to the thresholds, so re-tuning them doesn't break tests.
+HIGH = ALERT_AQI + 20  # opens an alert (given MIN_STREAK days)
+BAND = (CLEAR_AQI + ALERT_AQI) // 2  # between thresholds: an open alert stays open
+LOW = CLEAR_AQI - 20  # closes an alert
+CLEAN = 60
+
+
+def days_from(start_day, values, city="Delhi"):
+    """Rows for consecutive September days starting at start_day."""
+    return [row(f"2026-09-{start_day + i:02d}", city, v) for i, v in enumerate(values)]
+
+
 # --- pure logic ------------------------------------------------------------
 
+def test_thresholds_are_ordered():
+    assert CLEAR_AQI < ALERT_AQI and MIN_STREAK >= 1
+
+
 def test_latest_days_streak_and_order():
-    rows = [row("2026-09-20", "Delhi", 250), row("2026-09-22", "Delhi", 230),
-            row("2026-09-21", "Delhi", 210), row("2026-09-19", "Delhi", 150),
-            row("2026-09-22", "Mumbai", 60)]
+    rows = [row("2026-09-20", "Delhi", HIGH), row("2026-09-22", "Delhi", HIGH + 5),
+            row("2026-09-21", "Delhi", HIGH + 1), row("2026-09-19", "Delhi", BAND),
+            row("2026-09-22", "Mumbai", CLEAN)]
     days = {d.city: d for d in alerts.latest_days(rows)}
-    assert days["Delhi"] == CityDay("Delhi", "2026-09-22", 230.0, "250", 3)
+    assert days["Delhi"] == CityDay("Delhi", "2026-09-22", float(HIGH + 5), "250", 3)
     assert days["Mumbai"].streak == 0
     assert "Chennai" not in days
 
 
-@pytest.mark.parametrize("mean, opens", [(ALERT_AQI - 1, False), (ALERT_AQI, True), (620, True)])
-def test_plan_opens_only_at_alert_threshold(mean, opens):
-    actions = alerts.plan([CityDay("Delhi", "2026-09-22", mean, "700", 1)], {})
+@pytest.mark.parametrize("mean, streak, opens", [
+    (ALERT_AQI - 1, MIN_STREAK, False),  # not high enough
+    (ALERT_AQI, MIN_STREAK - 1, MIN_STREAK <= 1),  # high, but not for long enough
+    (ALERT_AQI, MIN_STREAK, True),
+    (620, MIN_STREAK + 5, True),
+])
+def test_plan_opens_only_after_streak_at_threshold(mean, streak, opens):
+    actions = alerts.plan([CityDay("Delhi", "2026-09-22", mean, "700", streak)], {})
     assert [a.kind for a in actions] == (["open"] if opens else [])
 
 
 def test_plan_open_issue_body_carries_markers():
-    [a] = alerts.plan([CityDay("Delhi", "2026-09-22", 320, "410", 2)], {})
+    [a] = alerts.plan([CityDay("Delhi", "2026-09-22", 320, "410", MIN_STREAK)], {})
     assert a.title == "AQI alert: Delhi is Hazardous (2026-09-22)"
-    assert "for 2 days running" in a.body
+    assert f"for {MIN_STREAK} days running" in a.body
     assert alerts.city_marker("Delhi") in a.body
     assert alerts.dates_in([a.body]) == {"2026-09-22"}
     assert "CAMS via Open-Meteo" in a.body
@@ -96,8 +117,8 @@ def test_plan_open_issue_body_carries_markers():
 
 def test_plan_hysteresis_keeps_issue_open_between_thresholds():
     body = alerts.city_marker("Delhi") + alerts.date_marker("2026-09-21")
-    [a] = alerts.plan([CityDay("Delhi", "2026-09-22", 170, "190", 0)], {"Delhi": (7, body)})
-    assert a.kind == "comment" and a.issue == 7  # 151 <= 170 < 201: stays open
+    [a] = alerts.plan([CityDay("Delhi", "2026-09-22", BAND, "190", 0)], {"Delhi": (7, body)})
+    assert a.kind == "comment" and a.issue == 7
     assert alerts.dates_in([a.new_issue_body]) == {"2026-09-21", "2026-09-22"}
 
 
@@ -106,18 +127,20 @@ def test_plan_closes_below_clear_threshold():
     [a] = alerts.plan([CityDay("Delhi", "2026-09-22", CLEAR_AQI - 1, "160", 0)],
                       {"Delhi": (7, body)})
     assert a.kind == "close"
+    assert f"Back below {alerts.aqi_category(CLEAR_AQI)} ({CLEAR_AQI})" in a.body
 
 
 def test_plan_skips_day_already_reported():
     body = alerts.city_marker("Delhi") + alerts.date_marker("2026-09-22")
-    assert alerts.plan([CityDay("Delhi", "2026-09-22", 300, "310", 1)], {"Delhi": (7, body)}) == []
+    day = CityDay("Delhi", "2026-09-22", HIGH, "310", MIN_STREAK)
+    assert alerts.plan([day], {"Delhi": (7, body)}) == []
 
 
 def test_plan_never_reopens_for_a_day_on_a_closed_issue():
-    day = CityDay("Delhi", "2026-09-22", 300, "310", 3)
+    day = CityDay("Delhi", "2026-09-22", HIGH, "310", MIN_STREAK)
     assert alerts.plan([day], {}, {"Delhi": {"2026-09-22"}}) == []
     # ...but the next bad day opens a fresh alert.
-    nxt = CityDay("Delhi", "2026-09-23", 300, "310", 4)
+    nxt = CityDay("Delhi", "2026-09-23", HIGH, "310", MIN_STREAK + 1)
     assert [a.kind for a in alerts.plan([nxt], {}, {"Delhi": {"2026-09-22"}})] == ["open"]
 
 
@@ -125,10 +148,15 @@ def test_plan_never_reopens_for_a_day_on_a_closed_issue():
 
 def test_episode_lifecycle(tmp_path):
     gh = FakeGitHub()
-    history = [row("2026-09-20", "Delhi", 120), row("2026-09-20", "Mumbai", 60)]
+    history = [row("2026-09-01", "Mumbai", CLEAN)]
+    delhi = [CLEAN] + [HIGH] * MIN_STREAK  # Sep 1 clean, then MIN_STREAK high days
 
-    # Day 1: Delhi turns Very Unhealthy -> issue opened, Mumbai untouched.
-    history += [row("2026-09-21", "Delhi", 240), row("2026-09-21", "Mumbai", 70)]
+    # Not yet a long enough streak: no issue.
+    for n in range(2, len(delhi)):
+        assert run(tmp_path, gh, history + days_from(1, delhi[:n])) == 0
+        assert gh.issues == {}
+    # Streak reached: issue opened, Mumbai untouched.
+    history += days_from(1, delhi)
     assert run(tmp_path, gh, history) == 0
     assert len(gh.issues) == 1 and gh.issues[1]["state"] == "open"
     assert gh.issues[1]["labels"] == [alerts.LABEL]
@@ -138,18 +166,19 @@ def test_episode_lifecycle(tmp_path):
     assert run(tmp_path, gh, history) == 0
     assert gh.calls[calls:] == [("GET", "/issues")]
 
-    # Day 2: Unhealthy (between thresholds) -> one comment, still open.
-    history.append(row("2026-09-22", "Delhi", 180))
+    # Next day between thresholds: one comment, still open.
+    next_day = 1 + len(delhi)
+    history += days_from(next_day, [BAND])
     assert run(tmp_path, gh, history) == 0
     assert gh.issues[1]["state"] == "open" and len(gh.comments[1]) == 1
 
-    # Day 3: back to Moderate -> closing comment and closed.
-    history.append(row("2026-09-23", "Delhi", 90))
+    # Then below the clear threshold: closing comment and closed.
+    history += days_from(next_day + 1, [LOW])
     assert run(tmp_path, gh, history) == 0
     assert gh.issues[1]["state"] == "closed"
     assert gh.issues[1]["state_reason"] == "completed"
     assert "closing" in gh.comments[1][-1]
-    assert alerts.dates_in([gh.issues[1]["body"]]) == {"2026-09-21", "2026-09-22", "2026-09-23"}
+    assert len(alerts.dates_in([gh.issues[1]["body"]])) == 3  # open day + 2 reported days
 
     # Re-run after closing: no reopen, no new issue.
     assert run(tmp_path, gh, history) == 0
@@ -158,32 +187,33 @@ def test_episode_lifecycle(tmp_path):
 
 def test_manual_close_mid_episode_does_not_reopen_same_day(tmp_path):
     gh = FakeGitHub()
-    history = [row("2026-09-21", "Delhi", 240), row("2026-09-22", "Delhi", 260)]
-    run(tmp_path, gh, history[:1])
-    run(tmp_path, gh, history)  # day 2 recorded on the issue
+    history = days_from(1, [HIGH] * MIN_STREAK)
+    run(tmp_path, gh, history)  # opens
+    history += days_from(1 + MIN_STREAK, [HIGH])
+    run(tmp_path, gh, history)  # that day recorded on the issue
     gh.issues[1]["state"] = "closed"  # someone closes it by hand
     assert run(tmp_path, gh, history) == 0
-    assert len(gh.issues) == 1  # not reopened for 2026-09-22
-    history.append(row("2026-09-23", "Delhi", 280))
+    assert len(gh.issues) == 1  # not reopened for the same day
+    history += days_from(2 + MIN_STREAK, [HIGH])
     run(tmp_path, gh, history)
     assert len(gh.issues) == 2  # a new bad day does open a fresh alert
 
 
 def test_one_issue_per_city(tmp_path):
     gh = FakeGitHub()
-    rows = [row("2026-09-22", "Delhi", 300), row("2026-09-22", "Kolkata", 210)]
+    rows = days_from(1, [HIGH] * MIN_STREAK) + days_from(1, [HIGH] * MIN_STREAK, "Kolkata")
     assert run(tmp_path, gh, rows) == 0
     assert sorted(i["title"].split()[2] for i in gh.issues.values()) == ["Delhi", "Kolkata"]
 
 
 def test_api_error_exits_nonzero(tmp_path, capsys):
     gh = FakeGitHub(fail_on=("POST", "/issues"))
-    assert run(tmp_path, gh, [row("2026-09-22", "Delhi", 300)]) == 1
+    assert run(tmp_path, gh, days_from(1, [HIGH] * MIN_STREAK)) == 1
     assert "HTTP 500" in capsys.readouterr().err
 
 
 def test_dry_run_without_token(tmp_path, capsys):
     path = tmp_path / "d.csv"
-    write_daily(path, [row("2026-09-22", "Delhi", 300)])
+    write_daily(path, days_from(1, [HIGH] * MIN_STREAK))
     assert alerts.main(path, env={}) == 0
     assert "would open: AQI alert: Delhi" in capsys.readouterr().out
