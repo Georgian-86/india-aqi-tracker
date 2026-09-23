@@ -48,6 +48,12 @@ Open-Meteo Air Quality API (CAMS data) into
   is the source of truth for which days were reported (no double posts, no reopen for a
   reported day). Without `GITHUB_TOKEN`/`GITHUB_REPOSITORY` it does a dry run. The
   workflow needs `issues: write`.
+- `backfill.py --since YYYY-MM-DD` fills `aqi_daily.csv`/`aqi_daily_gases.csv` beyond the
+  92-day `past_days` limit using `start_date`/`end_date`, in 60-day chunks walking backwards.
+  A chunk that gets HTTP 400 or has no data for any city ends the backfill **successfully**
+  (that's how the archive's start is discovered; it isn't documented). It reuses
+  `fetch.fetch_payload(params=…)`, `fetch.check_locations` and `fetch.day_stats`. The chart
+  shows at most the last 365 days (`make_chart.MAX_WINDOW_DAYS`).
 - `report.py` writes `reports/YYYY-MM.md` for each completed month (last day present and at
   least `MIN_DAYS` days). **Reports are immutable**: an existing file is never rewritten. The
   README links them (`report_months`). It uses the same India AQI rule as the README (no O₃).

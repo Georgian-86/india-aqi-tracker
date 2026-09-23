@@ -140,6 +140,12 @@ in one go, run the workflow manually (**Actions → Daily AQI snapshot → Run w
 are left untouched, so running it again is harmless. The snapshot CSV can't be backfilled,
 because the API only has a "current" value for now.
 
+To go **further back than 92 days**, fill in the workflow's `since` input (e.g. `2022-01-01`)
+or run `python backfill.py --since 2022-01-01`. It walks backwards from the oldest stored day
+in 60-day requests, and stops by itself where the CAMS archive ends: when the API rejects a
+range, or returns no data for any city. Older months then get their monthly reports on the
+next run. The chart always shows the last 365 days; older history lives in the reports.
+
 A separate [CI workflow](.github/workflows/ci.yml) runs `ruff` and `pytest` on every pull
 request and push to `main`. Dependencies are pinned exactly in `requirements.txt`, and
 Dependabot proposes upgrades monthly.

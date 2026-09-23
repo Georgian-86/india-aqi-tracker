@@ -12,6 +12,10 @@ on:
         description: "Past days of full-day stats to fetch (1-92). Days already stored are kept as-is; use 92 once to backfill history."
         type: number
         default: 1
+      since:
+        description: "Optional: also backfill full-day stats back to this date (YYYY-MM-DD) via backfill.py. It stops by itself where the archive ends."
+        type: string
+        default: ""
 
 permissions:
   contents: write
@@ -46,6 +50,13 @@ jobs:
           # Scheduled runs have no inputs, so this falls back to 1.
           PAST_DAYS: ${{ inputs.past_days || 1 }}
         run: python fetch.py --past-days "$PAST_DAYS"
+
+      - name: Backfill older history
+        id: backfill
+        if: ${{ inputs.since != '' && steps.tests.outcome == 'success' }}
+        env:
+          SINCE: ${{ inputs.since }}
+        run: python backfill.py --since "$SINCE"
 
       # The steps below also run when fetch.py failed part-way (e.g. one city
       # returned no AQI): whatever rows it did store still get committed.

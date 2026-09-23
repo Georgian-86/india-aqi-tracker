@@ -1,6 +1,6 @@
 """Tests for the README updater and chart renderer."""
 
-from datetime import date
+from datetime import date, timedelta
 
 import pytest
 
@@ -350,3 +350,13 @@ def test_health_advice_absent_without_pm(csv_path):
     daily = [daily_row("2026-09-22", "Delhi", "30.0", pm25="")]
     out = update_readme.update_readme(README, read_rows(csv_path), daily)
     assert "Health (CPCB)" not in out
+
+
+def test_chart_window_keeps_last_365_days():
+    start = date(2023, 1, 1)
+    pts = [(start + timedelta(days=i), float(i)) for i in range(1000)]
+    series = make_chart.recent({"Delhi": pts, "Old": pts[:10]})
+    assert list(series) == ["Delhi"]  # a city with only old data drops out
+    kept = series["Delhi"]
+    assert len(kept) == 365 and kept[-1] == pts[-1]
+    assert make_chart.recent({}) == {}

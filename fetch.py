@@ -83,10 +83,13 @@ def fetch_payload(
     max_attempts: int = MAX_ATTEMPTS,
     sleep=time.sleep,
     past_days: int = 1,
+    params: dict[str, str] | None = None,
 ) -> list[dict]:
-    """GET the API with exponential backoff on network errors and 429/5xx."""
+    """GET the API with exponential backoff on network errors and 429/5xx.
+
+    `params` overrides the default request (used by backfill.py)."""
     session = session or requests.Session()
-    params = build_params(past_days)
+    params = params or build_params(past_days)
     last_error: Exception | None = None
 
     for attempt in range(1, max_attempts + 1):
@@ -120,14 +123,12 @@ def _fmt(value) -> str:
     return "" if value is None else str(value)
 
 
-def parse_payload(payload: list[dict], fetched_at_utc: str) -> list[dict[str, str]]:
-    """Turn the API response into one CSV row per city."""
+def check_locations(payload: list[dict]) -> None:
+    """Fail unless the response has one location per city, in CITIES order."""
     if len(payload) != len(CITIES):
         raise FetchError(
             f"Expected {len(CITIES)} locations in response, got {len(payload)}"
         )
-
-    rows = []
     for (city, lat, lon), loc in zip(CITIES, payload):
         got_lat, got_lon = loc.get("latitude"), loc.get("longitude")
         if (
@@ -140,6 +141,13 @@ def parse_payload(payload: list[dict], fetched_at_utc: str) -> list[dict[str, st
                 f"Location {city} came back as ({got_lat}, {got_lon}), "
                 f"expected ~({lat}, {lon}); response order changed?"
             )
+
+
+def parse_payload(payload: list[dict], fetched_at_utc: str) -> list[dict[str, str]]:
+    """Turn the API response into one CSV row per city."""
+    check_locations(payload)
+    rows = []
+    for (city, _, _), loc in zip(CITIES, payload):
         current = loc.get("current")
         if not current or "time" not in current:
             raise FetchError(f"Missing 'current' block for {city}: {loc!r:.200}")
@@ -188,7 +196,7 @@ def parse_daily(
         times = hourly.get("time") or []
         for back in range(days, 0, -1):
             day = (today - timedelta(days=back)).isoformat()
-            row = _day_stats(hourly, times, day, city, fetched_at_utc)
+            row = day_stats(hourly, times, day, city, fetched_at_utc)
             if row is None:
                 skipped.append(f"{city} {day}")
             else:
@@ -197,7 +205,7 @@ def parse_daily(
     return rows, skipped
 
 
-def _day_stats(
+def day_stats(
     hourly: dict, times: list[str], day: str, city: str, fetched_at_utc: str
 ) -> dict[str, str] | None:
     idx = [i for i, t in enumerate(times) if t.startswith(day)]
