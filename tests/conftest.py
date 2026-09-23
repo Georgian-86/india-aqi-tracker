@@ -1,4 +1,5 @@
 import copy
+import hashlib
 import json
 from pathlib import Path
 
@@ -6,6 +7,10 @@ import pytest
 import requests
 
 FIXTURE = Path(__file__).parent / "fixtures" / "open_meteo_response.json"
+REPO = Path(__file__).resolve().parent.parent
+# Real outputs. The daily workflow runs pytest right before committing these,
+# so a test that writes here would publish fixture data as real data.
+PROTECTED = [REPO / "data", REPO / "charts", REPO / "README.md"]
 
 
 @pytest.fixture
@@ -44,3 +49,26 @@ def no_network(monkeypatch):
 
     monkeypatch.setattr(requests.Session, "get", blocked)
     monkeypatch.setattr(requests, "get", blocked)
+
+
+def _snapshot() -> dict[str, str]:
+    files = []
+    for p in PROTECTED:
+        files += [f for f in p.rglob("*") if f.is_file()] if p.is_dir() else [p]
+    return {
+        str(f.relative_to(REPO)): hashlib.sha256(f.read_bytes()).hexdigest()
+        for f in files
+        if f.exists()
+    }
+
+
+@pytest.fixture(autouse=True)
+def protect_real_outputs():
+    """Fail any test that creates, modifies or deletes the repo's real outputs."""
+    before = _snapshot()
+    yield
+    after = _snapshot()
+    assert after == before, (
+        "Test modified real repo outputs; use tmp_path instead. Changed: "
+        f"{sorted(set(before.items()) ^ set(after.items()))}"
+    )

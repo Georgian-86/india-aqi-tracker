@@ -8,9 +8,14 @@ Bengaluru, Kolkata and Chennai from the Open-Meteo Air Quality API (CAMS data) i
 
 - `common.py` holds the single source of truth: `CITIES` (name, lat, lon, **order matters**),
   `COLUMNS`, file paths, `aqi_category()` (US EPA scale) and `read_rows()`.
-- `fetch.py` makes one API call for all cities, parses it and appends to the CSV with dedupe.
+- `fetch.py` makes one API call for all cities (`current` plus `hourly` with
+  `past_days=1&forecast_days=1`). It appends the snapshot to `data/aqi.csv` and yesterday's
+  full-day stats (`parse_daily`) to `data/aqi_daily.csv` (`DAILY_COLUMNS`). Both are deduped
+  on `(date, city)`.
 - `make_chart.py` renders `charts/aqi_trend.png` (matplotlib, `Agg` backend).
-- `update_readme.py` replaces the text between `<!-- AQI:START -->` and `<!-- AQI:END -->`.
+- `update_readme.py` replaces the text between `<!-- AQI:START -->` and `<!-- AQI:END -->`
+  with a snapshot table ("vs prev." is only shown when readings are within 3 h of the same
+  time of day) and a full-day table with a 7-day mean.
 - `tests/`: pytest. The fixture `tests/fixtures/open_meteo_response.json` mirrors the real
   multi-location response (a JSON array in coordinate order).
 - `.github/workflows/daily.yml`: cron `17 3 * * *` (08:47 IST), a backup cron `17 6 * * *`
@@ -32,12 +37,17 @@ Bengaluru, Kolkata and Chennai from the Open-Meteo Air Quality API (CAMS data) i
 - **CSV is append-only.** Never rewrite or reorder historical rows. `(date, city)` is the
   unique key. A row missing `us_aqi` is **not written**: it would permanently block that slot.
   `fetch.py` stores the other cities and exits 1 so the backup run fills the gap. Missing
-  pollutant values (pm2_5, etc.) are written as empty strings.
+  pollutant values (pm2_5, etc.) are written as empty strings. Daily stats need at least
+  `MIN_DAILY_HOURS` hourly values. Otherwise that city is skipped and the run exits 1,
+  though the snapshot is still stored.
 - **Validate before writing:** response count, coordinates (within `COORD_TOLERANCE_DEG` of
   `CITIES`), and freshness (`current.time` no older than `MAX_DATA_AGE`). A stale response
   would otherwise dedupe to 0 rows while the run shows green.
 - **Failure must be loud:** scripts return non-zero from `main()` on error so the workflow
   goes red. Retry only transient failures (network errors, timeouts, 429, 5xx) with exponential backoff.
+- **Tests never write real outputs.** An autouse fixture in `conftest.py` fails any test that
+  changes `data/`, `charts/` or `README.md`. The daily job runs pytest right before
+  committing those. Always pass `tmp_path` paths, including `daily_csv_path`.
 - **Tests never touch the network.** `tests/conftest.py` blocks `requests`. Inject a fake
   session, a no-op `sleep` and a fixed `now` into `fetch.fetch_payload` / `fetch.main`
   (see `run_main` in `tests/test_fetch.py`).

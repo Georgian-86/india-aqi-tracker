@@ -12,13 +12,15 @@ day and commits the result to this repository. The git history *is* the database
 <!-- AQI:START -->
 **Latest snapshot: 2026-09-23** (fetched 22:00 IST · 1 day collected)
 
-| City | US AQI | Category | PM2.5 (µg/m³) | PM10 (µg/m³) | NO₂ (µg/m³) | O₃ (µg/m³) |
-|---|--:|---|--:|--:|--:|--:|
-| Delhi | 179 | 🔴 Unhealthy | 99.7 | 111.3 | 60.2 | 73 |
-| Mumbai | 89 | 🟡 Moderate | 34.7 | 46.7 | 16 | 78 |
-| Bengaluru | 55 | 🟡 Moderate | 16.6 | 22.8 | 14.5 | 64 |
-| Kolkata | 33 | 🟢 Good | 8.4 | 9.2 | 9.2 | 45 |
-| Chennai | 64 | 🟡 Moderate | 14.5 | 16 | 24.7 | 50 |
+| City | US AQI | Category | vs prev. | PM2.5 (µg/m³) | PM10 (µg/m³) | NO₂ (µg/m³) | O₃ (µg/m³) |
+|---|--:|---|:-:|--:|--:|--:|--:|
+| Delhi | 179 | 🔴 Unhealthy | – | 99.7 | 111.3 | 60.2 | 73 |
+| Mumbai | 89 | 🟡 Moderate | – | 34.7 | 46.7 | 16 | 78 |
+| Bengaluru | 55 | 🟡 Moderate | – | 16.6 | 22.8 | 14.5 | 64 |
+| Kolkata | 33 | 🟢 Good | – | 8.4 | 9.2 | 9.2 | 45 |
+| Chennai | 64 | 🟡 Moderate | – | 14.5 | 16 | 24.7 | 50 |
+
+<sub>vs prev.: change since the previous snapshot; “–” when there is none or the two were taken more than 3 h apart in time of day (AQI has a daily cycle).</sub>
 
 ![US AQI trend by city](charts/aqi_trend.png)
 <!-- AQI:END -->
@@ -37,6 +39,10 @@ Every day at **03:17 UTC (08:47 IST)** the GitHub Actions workflow
    [Open-Meteo Air Quality API](https://open-meteo.com/en/docs/air-quality-api) with all five
    cities' coordinates, asks for the current `us_aqi`, `pm2_5`, `pm10`, `nitrogen_dioxide` and
    `ozone`, and appends one row per city to [`data/aqi.csv`](data/aqi.csv).
+   The same request also returns **yesterday's 24 hourly values**. From these it computes
+   full-day statistics (mean and peak AQI, mean PM2.5 and PM10) into
+   [`data/aqi_daily.csv`](data/aqi_daily.csv). Unlike the snapshot, these don't depend on
+   the time of day the job ran.
    Rows are keyed by `(date, city)` using the IST date, so re-running on the same day never
    duplicates data. Network errors, timeouts, HTTP 429 and 5xx are retried with exponential
    backoff. The run fails (goes red) instead of recording something wrong if the retries run
@@ -75,14 +81,28 @@ Dependabot proposes upgrades monthly.
 | `o3` | ozone, µg/m³ |
 | `fetched_at_utc` | when the snapshot was taken, ISO-8601 UTC |
 
+`data/aqi_daily.csv` has one row per city per **completed** IST day:
+
+| column | meaning |
+|---|---|
+| `date` | the IST day the statistics cover |
+| `city` | city name |
+| `hours` | how many of the 24 hourly values were available (at least 20 are required) |
+| `us_aqi_mean`, `us_aqi_max` | mean and peak of the hourly US AQI |
+| `pm2_5_mean`, `pm10_mean` | mean concentration, µg/m³ |
+| `fetched_at_utc` | when it was fetched |
+
 ### Caveats
 
 - Values are **model estimates** from the CAMS global forecast (~40 km grid), not readings
   from ground monitoring stations. They are good for trends and comparisons but can differ
   from official CPCB station readings.
-- Each row is **one instantaneous reading**, not a daily average. Pollution follows a daily
-  cycle (in winter it's usually worst in the early morning), so readings are only comparable
-  across days when they were taken at a similar time. Check `fetched_at_utc`.
+- Each `aqi.csv` row is **one instantaneous reading**. Pollution follows a daily cycle (in
+  winter it's usually worst in the early morning), so snapshots are only comparable across
+  days when taken at a similar time. That's why the README's "vs prev." column only compares
+  readings taken within 3 hours of the same time of day. For trends, use `aqi_daily.csv`.
+- `us_aqi_mean` is the mean of Open-Meteo's hourly US AQI values. This is not the same as
+  the EPA's official daily AQI, which is computed from 24-hour mean concentrations.
 
 ## Running locally
 
@@ -94,7 +114,7 @@ pip install -r requirements.txt
 
 pytest                      # offline tests (API is mocked)
 ruff check .                # lint (pip install ruff)
-python fetch.py             # real API call → data/aqi.csv
+python fetch.py             # real API call → data/aqi.csv + data/aqi_daily.csv
 python make_chart.py        # → charts/aqi_trend.png
 python update_readme.py     # → README.md section
 ```

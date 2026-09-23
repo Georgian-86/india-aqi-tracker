@@ -3,6 +3,10 @@
 One request covers all cities (Open-Meteo accepts comma-separated coordinates
 and returns a JSON array in the same order). Rows are keyed by (date, city);
 re-running on the same IST day adds nothing.
+
+The same request also returns yesterday's hourly series, from which we derive
+full-day statistics (data/aqi_daily.csv). Unlike the single snapshot, these
+don't depend on what time of day the job happened to run.
 """
 
 from __future__ import annotations
@@ -15,11 +19,22 @@ from pathlib import Path
 
 import requests
 
-from common import CITIES, COLUMNS, CSV_PATH, IST, read_rows
+from common import (
+    CITIES,
+    COLUMNS,
+    CSV_PATH,
+    DAILY_COLUMNS,
+    DAILY_CSV_PATH,
+    IST,
+    read_rows,
+)
 
 API_URL = "https://air-quality-api.open-meteo.com/v1/air-quality"
 TIMEZONE = "Asia/Kolkata"
 CURRENT_VARS = ["us_aqi", "pm2_5", "pm10", "nitrogen_dioxide", "ozone"]
+HOURLY_VARS = ["us_aqi", "pm2_5", "pm10"]
+# Skip a city's daily stats (and fail) if fewer hours than this have data.
+MIN_DAILY_HOURS = 20
 # API variable -> CSV column
 FIELD_MAP = {
     "us_aqi": "us_aqi",
@@ -49,6 +64,10 @@ def build_params() -> dict[str, str]:
         "latitude": ",".join(f"{lat}" for _, lat, _ in CITIES),
         "longitude": ",".join(f"{lon}" for _, _, lon in CITIES),
         "current": ",".join(CURRENT_VARS),
+        "hourly": ",".join(HOURLY_VARS),
+        # Yesterday + today, in local (IST) hours.
+        "past_days": "1",
+        "forecast_days": "1",
         "timezone": TIMEZONE,
     }
 
@@ -141,7 +160,50 @@ def check_fresh(payload: list[dict], now: datetime) -> None:
             )
 
 
-def append_rows(path: Path, rows: list[dict[str, str]]) -> int:
+def _mean(values: list[float]) -> str:
+    return f"{sum(values) / len(values):.1f}"
+
+
+def parse_daily(
+    payload: list[dict], fetched_at_utc: str
+) -> tuple[list[dict[str, str]], list[str]]:
+    """Full-day stats for the IST day before current.time, one row per city.
+
+    Returns (rows, cities_skipped). A city is skipped when fewer than
+    MIN_DAILY_HOURS of its 24 hours have a us_aqi value.
+    """
+    rows, skipped = [], []
+    for (city, _, _), loc in zip(CITIES, payload):
+        today = datetime.fromisoformat(loc["current"]["time"]).date()
+        day = (today - timedelta(days=1)).isoformat()
+        hourly = loc.get("hourly") or {}
+        times = hourly.get("time") or []
+        idx = [i for i, t in enumerate(times) if t.startswith(day)]
+
+        def series(key: str) -> list[float]:
+            values = hourly.get(key) or []
+            return [values[i] for i in idx if i < len(values) and values[i] is not None]
+
+        aqi, pm25, pm10 = series("us_aqi"), series("pm2_5"), series("pm10")
+        if len(aqi) < MIN_DAILY_HOURS:
+            skipped.append(city)
+            continue
+        rows.append({
+            "date": day,
+            "city": city,
+            "hours": str(len(aqi)),
+            "us_aqi_mean": _mean(aqi),
+            "us_aqi_max": _fmt(max(aqi)),
+            "pm2_5_mean": _mean(pm25) if pm25 else "",
+            "pm10_mean": _mean(pm10) if pm10 else "",
+            "fetched_at_utc": fetched_at_utc,
+        })
+    return rows, skipped
+
+
+def append_rows(
+    path: Path, rows: list[dict[str, str]], columns: list[str] = COLUMNS
+) -> int:
     """Append rows whose (date, city) isn't already present. Returns count written."""
     existing = {(r["date"], r["city"]) for r in read_rows(path)}
     new_rows = [r for r in rows if (r["date"], r["city"]) not in existing]
@@ -151,7 +213,7 @@ def append_rows(path: Path, rows: list[dict[str, str]]) -> int:
     path.parent.mkdir(parents=True, exist_ok=True)
     write_header = not path.exists() or path.stat().st_size == 0
     with path.open("a", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=COLUMNS)
+        writer = csv.DictWriter(f, fieldnames=columns)
         if write_header:
             writer.writeheader()
         writer.writerows(new_rows)
@@ -160,6 +222,7 @@ def append_rows(path: Path, rows: list[dict[str, str]]) -> int:
 
 def main(
     csv_path: Path = CSV_PATH,
+    daily_csv_path: Path = DAILY_CSV_PATH,
     session: requests.Session | None = None,
     sleep=time.sleep,
     now: datetime | None = None,
@@ -170,6 +233,7 @@ def main(
         fetched_at = now.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         rows = parse_payload(payload, fetched_at)
         check_fresh(payload, now)
+        daily_rows, daily_skipped = parse_daily(payload, fetched_at)
     except (requests.RequestException, FetchError, ValueError, KeyError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
@@ -184,10 +248,27 @@ def main(
     for r in rows:
         print(f"{r['date']}  {r['city']:<10} AQI={r['us_aqi'] or 'MISSING'}")
     print(f"Wrote {written} new row(s) to {csv_path}")
+
+    daily_written = append_rows(daily_csv_path, daily_rows, DAILY_COLUMNS)
+    for r in daily_rows:
+        print(
+            f"{r['date']}  {r['city']:<10} 24h mean AQI={r['us_aqi_mean']} "
+            f"max={r['us_aqi_max']} ({r['hours']}h)"
+        )
+    print(f"Wrote {daily_written} new row(s) to {daily_csv_path}")
+
+    failed = False
     if missing:
         print(f"ERROR: no us_aqi for {', '.join(missing)}; not stored", file=sys.stderr)
-        return 1
-    return 0
+        failed = True
+    if daily_skipped:
+        print(
+            f"ERROR: fewer than {MIN_DAILY_HOURS} hourly values for "
+            f"{', '.join(daily_skipped)}; daily stats not stored",
+            file=sys.stderr,
+        )
+        failed = True
+    return 1 if failed else 0
 
 
 if __name__ == "__main__":
