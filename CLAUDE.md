@@ -42,8 +42,11 @@ Open-Meteo Air Quality API (CAMS data) into
   matches the latest snapshot's date, so a stale forecast is never presented as current.
   `parse_hourly` stores the same completed days' hourly values in `data/aqi_hourly.csv`
   (`HOURLY_COLUMNS`, keyed on `(date, hour, city)`, no `fetched_at_utc` to halve its size).
-  `diurnal.py` turns the last 30 days into each city's cleanest/worst `WINDOW_HOURS`
-  stretch (wrapping midnight; needs `MIN_DAYS` per hour); README via `render_time_of_day`.
+  `diurnal.py` turns the last 30 days of hourly **PM2.5** into each city's cleanest/worst
+  `WINDOW_HOURS` stretch (wrapping midnight; needs `MIN_DAYS` per hour); README via
+  `render_time_of_day`. **Don't use hourly `us_aqi` for within-day analysis.** Open-Meteo
+  computes it from 24 h PM and 8 h O₃ rolling means, so it's nearly flat and peaks with
+  afternoon ozone. It's fine for daily means and categories.
   `forecast_skill.py` pairs forecasts with the matching `aqi_daily.csv` day (MAE, bias,
   category hit rate, last `WINDOW_DAYS`, cities with ≥ `MIN_PAIRS`). The README renders it
   via `render_forecast_skill`. Both sides are CAMS, so never describe it as accuracy against

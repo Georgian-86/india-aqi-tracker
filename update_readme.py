@@ -391,20 +391,22 @@ def render_time_of_day(hourly_rows: list[dict[str, str]]) -> list[str]:
     lines = [
         "",
         f"**Time of day** ({start} to {end}, IST): the {diurnal.WINDOW_HOURS}-hour stretches "
-        "with the lowest and highest mean US AQI",
+        "with the lowest and highest mean PM2.5",
         "",
-        "| City | Cleanest | Worst | Difference |",
+        "| City | Cleanest (µg/m³) | Worst (µg/m³) | Worst ÷ cleanest |",
         "|---|---|---|--:|",
     ]
     for p in cities:
+        ratio = p.worst_mean / p.best_mean if p.best_mean else float("nan")
         lines.append(
             f"| {p.city} | {p.span(p.best_start)} ({p.best_mean:.0f}) | "
-            f"{p.span(p.worst_start)} ({p.worst_mean:.0f}) | {p.worst_mean - p.best_mean:.0f} |"
+            f"{p.span(p.worst_start)} ({p.worst_mean:.0f}) | {ratio:.1f}× |"
         )
     lines += [
         "",
-        "<sub>From CAMS hourly values: the model's daily cycle (night-time inversions, "
-        "traffic), not street-level readings.</sub>",
+        "<sub>From CAMS hourly PM2.5: the model's daily cycle (night-time inversions, "
+        "traffic), not street-level readings. Hourly US AQI isn't used here: it's built "
+        "from 24-hour PM averages, so it barely changes within a day.</sub>",
     ]
     return lines
 

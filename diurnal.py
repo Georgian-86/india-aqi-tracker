@@ -1,10 +1,17 @@
 """When in the day each city's air is usually cleanest and worst.
 
-From data/aqi_hourly.csv, averages the US AQI for each IST hour over the
+From data/aqi_hourly.csv, averages hourly PM2.5 for each IST hour over the
 last WINDOW_DAYS days, then finds the WINDOW_HOURS-long stretch with the
 lowest and the highest mean (wrapping past midnight). It's a model profile:
 CAMS captures the daily cycle driven by the boundary layer and traffic, but
 not local sources at street level.
+
+Why PM2.5 and not the hourly US AQI: Open-Meteo computes the hourly US AQI
+from 24-hour rolling PM means and 8-hour O₃ means, as the EPA defines it, so
+it hardly moves within a day and peaks with afternoon ozone. On the first 30
+days of real data it put Delhi's worst hours at 17:00-20:00 with a spread of
+26 AQI points; hourly PM2.5 shows the actual cycle (worst around midnight,
+cleanest mid-afternoon, ~1.5x apart).
 """
 
 from __future__ import annotations
@@ -18,6 +25,7 @@ from common import CITIES
 WINDOW_DAYS = 30
 WINDOW_HOURS = 3
 MIN_DAYS = 14  # each hour needs this many days of data for a city to be shown
+COLUMN = "pm2_5"
 
 
 @dataclass(frozen=True)
@@ -38,15 +46,15 @@ def hourly_means(
     hourly_rows: list[dict[str, str]], days: int = WINDOW_DAYS
 ) -> tuple[str, str, dict[str, list[tuple[float, int] | None]]] | None:
     """(start, end, city -> 24 × (mean, days) or None) over the last `days` days."""
-    dates = sorted({r["date"] for r in hourly_rows if r["us_aqi"]})
+    dates = sorted({r["date"] for r in hourly_rows if r[COLUMN]})
     if not dates:
         return None
     end = dates[-1]
     start = (date.fromisoformat(end) - timedelta(days=days - 1)).isoformat()
     values: dict[tuple[str, int], list[float]] = defaultdict(list)
     for r in hourly_rows:
-        if r["us_aqi"] and start <= r["date"] <= end:
-            values[(r["city"], int(r["hour"]))].append(float(r["us_aqi"]))
+        if r[COLUMN] and start <= r["date"] <= end:
+            values[(r["city"], int(r["hour"]))].append(float(r[COLUMN]))
     means = {
         city: [
             (sum(v) / len(v), len(v)) if (v := values.get((city, h))) else None
