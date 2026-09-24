@@ -40,6 +40,10 @@ Open-Meteo Air Quality API (CAMS data) into
   (`FORECAST_COLUMNS`, with an `issued` day; first issue wins). A missing forecast is a
   warning, not a failure. The README and `latest.json` show a forecast only if its `issued`
   matches the latest snapshot's date, so a stale forecast is never presented as current.
+  `forecast_skill.py` pairs forecasts with the matching `aqi_daily.csv` day (MAE, bias,
+  category hit rate, last `WINDOW_DAYS`, cities with ≥ `MIN_PAIRS`). The README renders it
+  via `render_forecast_skill`. Both sides are CAMS, so never describe it as accuracy against
+  ground truth.
 - `make_chart.py` renders `charts/aqi_trend.png` (matplotlib, `Agg` backend; `charts/` is
   git-ignored). The workflow publishes it as the only commit on the `charts` branch
   (force-pushed via `hash-object`/`mktree`/`commit-tree`). The README embeds it from

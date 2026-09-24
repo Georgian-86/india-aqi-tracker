@@ -28,6 +28,7 @@ from common import (
     naqi,
     read_rows,
 )
+import forecast_skill
 import report
 
 START = "<!-- AQI:START -->"
@@ -349,6 +350,36 @@ def render_forecast(forecast_rows: list[dict[str, str]], snapshot_day: str) -> l
     ]
 
 
+def render_forecast_skill(
+    forecast_rows: list[dict[str, str]], daily_rows: list[dict[str, str]]
+) -> list[str]:
+    """How far the day-ahead forecast landed from the day's mean (forecast_skill)."""
+    result = forecast_skill.skill(forecast_rows, daily_rows)
+    if result is None:
+        return []  # not enough forecast/actual pairs yet
+    start, end, cities = result
+    lines = [
+        "",
+        f"**Forecast check** ({start} to {end}): the day-ahead full-day mean US AQI vs the "
+        "day's actual mean",
+        "",
+        "| City | Days | Mean error | Bias | Category right |",
+        "|---|--:|--:|--:|--:|",
+    ]
+    for s in cities:
+        lines.append(
+            f"| {s.city} | {s.pairs} | {s.mae:.0f} | {s.bias:+.0f} | {s.hit_rate:.0%} |"
+        )
+    lines += [
+        "",
+        "<sub>Bias > 0: the forecast ran high. Both sides are CAMS output (the actual is the "
+        "model's hourly values fetched after the day ended), so this shows how much the "
+        "forecast moved, not accuracy against ground stations. Cities need "
+        f"{forecast_skill.MIN_PAIRS}+ days to be listed.</sub>",
+    ]
+    return lines
+
+
 EVENTS_SHOWN = 12  # most recent changes listed; the full log is in the CSV
 
 
@@ -434,6 +465,7 @@ def render_section(
     lines += render_daily(daily_rows or [], gas_rows)
     lines += render_summary(daily_rows or [])
     lines += render_india_summary(daily_rows or [], gas_rows or [])
+    lines += render_forecast_skill(forecast_rows or [], daily_rows or [])
     lines += ["", f"![US AQI trend by city]({CHART_URL})"]
     if report_months:
         recent_months = sorted(report_months, reverse=True)[:RECENT_REPORTS]
