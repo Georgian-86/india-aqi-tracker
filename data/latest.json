@@ -1,0 +1,244 @@
+{
+  "schema_version": 1,
+  "snapshot": {
+    "date": "2026-09-24",
+    "cities": [
+      {
+        "city": "Delhi",
+        "lat": 28.6139,
+        "lon": 77.209,
+        "us_aqi": 159.0,
+        "us_category": "Unhealthy",
+        "pm2_5": 32.1,
+        "pm10": 52.3,
+        "no2": 20.1,
+        "o3": 116.0,
+        "fetched_at_utc": "2026-09-24T04:13:17Z"
+      },
+      {
+        "city": "Mumbai",
+        "lat": 19.076,
+        "lon": 72.8777,
+        "us_aqi": 103.0,
+        "us_category": "Unhealthy for Sensitive Groups",
+        "pm2_5": 33.6,
+        "pm10": 53.7,
+        "no2": 9.5,
+        "o3": 88.0,
+        "fetched_at_utc": "2026-09-24T04:13:17Z"
+      },
+      {
+        "city": "Bengaluru",
+        "lat": 12.9716,
+        "lon": 77.5946,
+        "us_aqi": 55.0,
+        "us_category": "Moderate",
+        "pm2_5": 6.1,
+        "pm10": 8.3,
+        "no2": 6.0,
+        "o3": 67.0,
+        "fetched_at_utc": "2026-09-24T04:13:17Z"
+      },
+      {
+        "city": "Kolkata",
+        "lat": 22.5726,
+        "lon": 88.3639,
+        "us_aqi": 31.0,
+        "us_category": "Good",
+        "pm2_5": 6.1,
+        "pm10": 7.0,
+        "no2": 5.3,
+        "o3": 64.0,
+        "fetched_at_utc": "2026-09-24T04:13:17Z"
+      },
+      {
+        "city": "Chennai",
+        "lat": 13.0827,
+        "lon": 80.2707,
+        "us_aqi": 57.0,
+        "us_category": "Moderate",
+        "pm2_5": 12.8,
+        "pm10": 15.5,
+        "no2": 10.3,
+        "o3": 74.0,
+        "fetched_at_utc": "2026-09-24T04:13:17Z"
+      },
+      {
+        "city": "Hyderabad",
+        "lat": 17.385,
+        "lon": 78.4867,
+        "us_aqi": 80.0,
+        "us_category": "Moderate",
+        "pm2_5": 20.7,
+        "pm10": 21.1,
+        "no2": 8.5,
+        "o3": 98.0,
+        "fetched_at_utc": "2026-09-24T04:13:17Z"
+      },
+      {
+        "city": "Pune",
+        "lat": 18.5204,
+        "lon": 73.8567,
+        "us_aqi": 89.0,
+        "us_category": "Moderate",
+        "pm2_5": 30.2,
+        "pm10": 34.5,
+        "no2": 8.5,
+        "o3": 102.0,
+        "fetched_at_utc": "2026-09-24T04:13:17Z"
+      },
+      {
+        "city": "Ahmedabad",
+        "lat": 23.0225,
+        "lon": 72.5714,
+        "us_aqi": 78.0,
+        "us_category": "Moderate",
+        "pm2_5": 20.5,
+        "pm10": 34.1,
+        "no2": 9.0,
+        "o3": 69.0,
+        "fetched_at_utc": "2026-09-24T04:13:17Z"
+      }
+    ]
+  },
+  "full_day": {
+    "date": "2026-09-23",
+    "cities": [
+      {
+        "city": "Delhi",
+        "hours": 24,
+        "us_aqi_mean": 167.1,
+        "us_aqi_max": 208.0,
+        "us_category": "Unhealthy",
+        "pm2_5_mean": 70.0,
+        "pm10_mean": 104.9,
+        "no2_mean": 32.8,
+        "india_aqi": {
+          "index": 133,
+          "category": "Moderate",
+          "prominent": "PM2.5",
+          "pollutants": 3
+        }
+      },
+      {
+        "city": "Mumbai",
+        "hours": 24,
+        "us_aqi_mean": 84.9,
+        "us_aqi_max": 99.0,
+        "us_category": "Moderate",
+        "pm2_5_mean": 33.2,
+        "pm10_mean": 44.3,
+        "no2_mean": 10.6,
+        "india_aqi": {
+          "index": 55,
+          "category": "Satisfactory",
+          "prominent": "PM2.5",
+          "pollutants": 3
+        }
+      },
+      {
+        "city": "Bengaluru",
+        "hours": 24,
+        "us_aqi_mean": 54.0,
+        "us_aqi_max": 55.0,
+        "us_category": "Moderate",
+        "pm2_5_mean": 11.9,
+        "pm10_mean": 18.9,
+        "no2_mean": 8.8,
+        "india_aqi": {
+          "index": 20,
+          "category": "Good",
+          "prominent": "PM2.5",
+          "pollutants": 3
+        }
+      },
+      {
+        "city": "Kolkata",
+        "hours": 24,
+        "us_aqi_mean": 39.3,
+        "us_aqi_max": 52.0,
+        "us_category": "Good",
+        "pm2_5_mean": 5.6,
+        "pm10_mean": 6.4,
+        "no2_mean": 5.9,
+        "india_aqi": {
+          "index": 9,
+          "category": "Good",
+          "prominent": "PM2.5",
+          "pollutants": 3
+        }
+      },
+      {
+        "city": "Chennai",
+        "hours": 24,
+        "us_aqi_mean": 65.7,
+        "us_aqi_max": 68.0,
+        "us_category": "Moderate",
+        "pm2_5_mean": 14.2,
+        "pm10_mean": 15.8,
+        "no2_mean": 16.8,
+        "india_aqi": {
+          "index": 24,
+          "category": "Good",
+          "prominent": "PM2.5",
+          "pollutants": 3
+        }
+      },
+      {
+        "city": "Hyderabad",
+        "hours": 24,
+        "us_aqi_mean": 87.9,
+        "us_aqi_max": 99.0,
+        "us_category": "Moderate",
+        "pm2_5_mean": 22.3,
+        "pm10_mean": 22.6,
+        "no2_mean": 7.2,
+        "india_aqi": {
+          "index": 37,
+          "category": "Good",
+          "prominent": "PM2.5",
+          "pollutants": 3
+        }
+      },
+      {
+        "city": "Pune",
+        "hours": 24,
+        "us_aqi_mean": 79.8,
+        "us_aqi_max": 116.0,
+        "us_category": "Moderate",
+        "pm2_5_mean": 22.9,
+        "pm10_mean": 24.2,
+        "no2_mean": 8.5,
+        "india_aqi": {
+          "index": 38,
+          "category": "Good",
+          "prominent": "PM2.5",
+          "pollutants": 3
+        }
+      },
+      {
+        "city": "Ahmedabad",
+        "hours": 24,
+        "us_aqi_mean": 96.4,
+        "us_aqi_max": 109.0,
+        "us_category": "Moderate",
+        "pm2_5_mean": 29.5,
+        "pm10_mean": 36.2,
+        "no2_mean": 26.8,
+        "india_aqi": {
+          "index": 49,
+          "category": "Good",
+          "prominent": "PM2.5",
+          "pollutants": 3
+        }
+      }
+    ]
+  },
+  "units": {
+    "concentrations": "µg/m³"
+  },
+  "notes": {
+    "india_aqi": "CPCB National AQI from full-day mean PM2.5, PM10 and NO₂. O₃ is excluded (CAMS surface ozone is biased high over India)."
+  },
+  "attribution": "Air quality data from Open-Meteo (open-meteo.com), CC BY 4.0, generated using Copernicus Atmosphere Monitoring Service information. Model estimates, not ground measurements."
+}
