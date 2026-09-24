@@ -234,6 +234,76 @@
       }
     ]
   },
+  "forecast": {
+    "date": "2026-09-25",
+    "issued": "2026-09-24",
+    "cities": [
+      {
+        "city": "Delhi",
+        "us_aqi_mean": 108.8,
+        "us_aqi_max": 137.0,
+        "us_category": "Unhealthy for Sensitive Groups",
+        "pm2_5_mean": 25.1,
+        "pm10_mean": 48.1
+      },
+      {
+        "city": "Mumbai",
+        "us_aqi_mean": 84.3,
+        "us_aqi_max": 93.0,
+        "us_category": "Moderate",
+        "pm2_5_mean": 25.8,
+        "pm10_mean": 41.4
+      },
+      {
+        "city": "Bengaluru",
+        "us_aqi_mean": 34.0,
+        "us_aqi_max": 43.0,
+        "us_category": "Good",
+        "pm2_5_mean": 3.5,
+        "pm10_mean": 3.7
+      },
+      {
+        "city": "Kolkata",
+        "us_aqi_mean": 35.6,
+        "us_aqi_max": 41.0,
+        "us_category": "Good",
+        "pm2_5_mean": 7.6,
+        "pm10_mean": 8.8
+      },
+      {
+        "city": "Chennai",
+        "us_aqi_mean": 65.9,
+        "us_aqi_max": 85.0,
+        "us_category": "Moderate",
+        "pm2_5_mean": 13.9,
+        "pm10_mean": 17.3
+      },
+      {
+        "city": "Hyderabad",
+        "us_aqi_mean": 77.0,
+        "us_aqi_max": 83.0,
+        "us_category": "Moderate",
+        "pm2_5_mean": 19.3,
+        "pm10_mean": 21.7
+      },
+      {
+        "city": "Pune",
+        "us_aqi_mean": 74.2,
+        "us_aqi_max": 87.0,
+        "us_category": "Moderate",
+        "pm2_5_mean": 16.4,
+        "pm10_mean": 21.8
+      },
+      {
+        "city": "Ahmedabad",
+        "us_aqi_mean": 70.1,
+        "us_aqi_max": 71.0,
+        "us_category": "Moderate",
+        "pm2_5_mean": 19.9,
+        "pm10_mean": 32.5
+      }
+    ]
+  },
   "units": {
     "concentrations": "µg/m³"
   },

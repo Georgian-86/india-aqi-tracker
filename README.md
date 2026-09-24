@@ -11,6 +11,10 @@ Pune and Ahmedabad**, once a day and commits the result to this repository. The 
 ## Today's air quality
 
 <!-- AQI:START -->
+**Right now (US AQI):** worst **Delhi** 159 🔴 Unhealthy · cleanest **Kolkata** 31 🟢 Good · 1 of 8 cities Unhealthy or worse.
+
+**Forecast for 2026-09-25** (CAMS, full-day mean US AQI): Delhi 109 🟠 · Mumbai 84 🟡 · Bengaluru 34 🟢 · Kolkata 36 🟢 · Chennai 66 🟡 · Hyderabad 77 🟡 · Pune 74 🟡 · Ahmedabad 70 🟡
+
 **Latest snapshot: 2026-09-24** (fetched 09:43 IST · 2 days collected)
 
 | City | US AQI | Category | vs prev. | PM2.5 (µg/m³) | PM10 (µg/m³) | NO₂ (µg/m³) | O₃ (µg/m³) |
