@@ -15,6 +15,8 @@ Pune and Ahmedabad**, once a day and commits the result to this repository. The 
 
 **Forecast for 2026-09-25** (CAMS, full-day mean US AQI): Delhi 109 🟠 · Mumbai 84 🟡 · Bengaluru 34 🟢 · Kolkata 36 🟢 · Chennai 66 🟡 · Hyderabad 77 🟡 · Pune 74 🟡 · Ahmedabad 70 🟡
 
+**Category changes in the last 24 h:** none.
+
 **Latest snapshot: 2026-09-24** (fetched 09:43 IST · 2 days collected)
 
 | City | US AQI | Category | vs prev. | PM2.5 (µg/m³) | PM10 (µg/m³) | NO₂ (µg/m³) | O₃ (µg/m³) |
