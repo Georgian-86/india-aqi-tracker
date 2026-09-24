@@ -2,6 +2,7 @@
 
 [![Daily AQI snapshot](https://github.com/Georgian-86/india-aqi-tracker/actions/workflows/daily.yml/badge.svg)](https://github.com/Georgian-86/india-aqi-tracker/actions/workflows/daily.yml)
 [![CI](https://github.com/Georgian-86/india-aqi-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/Georgian-86/india-aqi-tracker/actions/workflows/ci.yml)
+[![Latest snapshot](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FGeorgian-86%2Findia-aqi-tracker%2Fmain%2Fdata%2Flatest.json&query=%24.snapshot.date&label=latest%20snapshot&color=blue)](data/latest.json)
 
 A [git scraping](https://simonwillison.net/2020/Oct/9/git-scraping/) project that records the
 air quality of eight Indian cities, **Delhi, Mumbai, Bengaluru, Kolkata, Chennai, Hyderabad,
@@ -188,6 +189,10 @@ rewritten on each run (it's the only file in `data/` that isn't append-only). Mi
 values are `null`, and so is the India AQI `index` on a Severe day, since CPCB's scale has
 no number above 500. Check `snapshot.date` to see how fresh it is. The raw URL is
 `https://raw.githubusercontent.com/Georgian-86/india-aqi-tracker/main/data/latest.json`.
+The "latest snapshot" badge at the top of this page reads its date from that file each
+time the page is viewed. So unlike the README's own staleness warning, which is written
+by the workflow, it also shows when the workflow has stopped running altogether (for
+example, a delayed or disabled schedule).
 The `schema_version` field is bumped only on breaking changes.
 
 `data/aqi_daily_gases.csv` holds gas statistics for the same days. It's a separate file so
