@@ -5,7 +5,7 @@ import pytest
 import requests
 
 import fetch
-from common import CITIES, COLUMNS, DAILY_COLUMNS, FORECAST_COLUMNS
+from common import CITIES, COLUMNS, DAILY_COLUMNS, FORECAST_COLUMNS, HOURLY_COLUMNS
 from conftest import FakeSession, make_response
 
 FETCHED_AT = "2026-09-23T03:17:00Z"
@@ -23,6 +23,7 @@ def run_main(path, outcomes, now=NOW, daily_path=None):
         daily_csv_path=daily_path,
         gases_csv_path=path.with_name("aqi_daily_gases.csv"),
         forecast_csv_path=path.with_name("aqi_forecast.csv"),
+        hourly_csv_path=path.with_name("aqi_hourly.csv"),
         session=session,
         sleep=lambda s: None,
         now=now,
@@ -304,6 +305,7 @@ def test_main_backfill_then_daily_run_dedupes(tmp_path, payload):
     assert fetch.main(csv_path=path, daily_csv_path=daily, session=session,
                       gases_csv_path=tmp_path / "gases.csv",
                       forecast_csv_path=tmp_path / "forecast.csv",
+                      hourly_csv_path=tmp_path / "hourly.csv",
                       sleep=lambda s: None, now=NOW, past_days=5) == 0
     assert session.calls[0]["params"]["past_days"] == "5"
     assert len(read_csv(daily)) == 1 + 5 * N
@@ -403,3 +405,31 @@ def test_missing_forecast_is_not_fatal(tmp_path, payload, capsys):
         loc["hourly"]["us_aqi"][48:72] = [None] * 24
     assert run_main(tmp_path / "aqi.csv", [make_response(200, payload)]) == 0
     assert "WARNING: no forecast for" in capsys.readouterr().err
+
+
+# --- hourly ------------------------------------------------------------------
+
+def test_parse_hourly_keeps_only_completed_days(payload):
+    rows = fetch.parse_hourly(payload, days=1)
+    assert {r["date"] for r in rows} == {"2026-09-22"}  # not today, not tomorrow
+    assert len(rows) == sum(
+        v is not None for loc in payload for v in loc["hourly"]["us_aqi"][:24])
+    first = rows[0]
+    assert (first["hour"], first["city"]) == ("00", CITIES[0][0])
+    assert first["us_aqi"] == str(payload[0]["hourly"]["us_aqi"][0])
+
+
+def test_parse_hourly_skips_missing_hours(payload):
+    payload[0]["hourly"]["us_aqi"][5] = None
+    rows = fetch.parse_hourly(payload)
+    assert not any(r["city"] == CITIES[0][0] and r["hour"] == "05" for r in rows)
+
+
+def test_main_stores_hourly_and_dedupes(tmp_path, payload):
+    path = tmp_path / "aqi.csv"
+    assert run_main(path, [make_response(200, payload)]) == 0
+    hourly = read_csv(tmp_path / "aqi_hourly.csv")
+    assert hourly[0] == HOURLY_COLUMNS
+    n = len(hourly)
+    assert run_main(path, [make_response(200, payload)]) == 0
+    assert len(read_csv(tmp_path / "aqi_hourly.csv")) == n

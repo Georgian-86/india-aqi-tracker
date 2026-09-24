@@ -162,7 +162,8 @@ def test_main_reads_both_csvs(tmp_path, payload):
     fetch.append_rows(forecast, fetch.parse_forecast(payload, "2026-09-23T03:17:00Z")[0],
                       fetch.FORECAST_COLUMNS)
     assert update_readme.main(readme, snap, daily, tmp_path / "no_gases.csv",
-                              tmp_path / "no_reports", forecast, tmp_path / "no_events.csv") == 0
+                              tmp_path / "no_reports", forecast, tmp_path / "no_events.csv",
+                              tmp_path / "no_hourly.csv") == 0
     text = readme.read_text()
     assert "**Full day 2026-09-22**" in text and "| Mumbai | 74 |" in text
     assert "**Forecast for 2026-09-24** (CAMS, full-day mean US AQI): Delhi " in text

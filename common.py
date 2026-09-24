@@ -13,6 +13,7 @@ DAILY_CSV_PATH = ROOT / "data" / "aqi_daily.csv"
 GASES_CSV_PATH = ROOT / "data" / "aqi_daily_gases.csv"
 FORECAST_CSV_PATH = ROOT / "data" / "aqi_forecast.csv"
 EVENTS_CSV_PATH = ROOT / "data" / "aqi_events.csv"
+HOURLY_CSV_PATH = ROOT / "data" / "aqi_hourly.csv"
 CHART_PATH = ROOT / "charts" / "aqi_trend.png"
 README_PATH = ROOT / "README.md"
 
@@ -47,6 +48,10 @@ EVENT_COLUMNS = [
     "time_ist", "city", "from_category", "to_category", "us_aqi", "pm2_5", "pm10",
     "fetched_at_utc",
 ]
+# Hourly values for completed IST days, keyed on (date, hour, city). No
+# fetched_at_utc: at 192 rows a day it would double the file for no gain
+# (aqi_daily.csv has the fetch time of the same day).
+HOURLY_COLUMNS = ["date", "hour", "city", "us_aqi", "pm2_5", "pm10"]
 # CAMS forecast for the day after the snapshot (`date` is the forecast day;
 # `issued` is the IST day it was fetched), kept to compare with the actual day later.
 FORECAST_COLUMNS = [

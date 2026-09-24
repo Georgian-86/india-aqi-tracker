@@ -40,6 +40,10 @@ Open-Meteo Air Quality API (CAMS data) into
   (`FORECAST_COLUMNS`, with an `issued` day; first issue wins). A missing forecast is a
   warning, not a failure. The README and `latest.json` show a forecast only if its `issued`
   matches the latest snapshot's date, so a stale forecast is never presented as current.
+  `parse_hourly` stores the same completed days' hourly values in `data/aqi_hourly.csv`
+  (`HOURLY_COLUMNS`, keyed on `(date, hour, city)`, no `fetched_at_utc` to halve its size).
+  `diurnal.py` turns the last 30 days into each city's cleanest/worst `WINDOW_HOURS`
+  stretch (wrapping midnight; needs `MIN_DAYS` per hour); README via `render_time_of_day`.
   `forecast_skill.py` pairs forecasts with the matching `aqi_daily.csv` day (MAE, bias,
   category hit rate, last `WINDOW_DAYS`, cities with ≥ `MIN_PAIRS`). The README renders it
   via `render_forecast_skill`. Both sides are CAMS, so never describe it as accuracy against

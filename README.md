@@ -204,6 +204,15 @@ reading:
 | `pm2_5_mean`, `pm10_mean` | mean concentration, µg/m³ |
 | `fetched_at_utc` | when it was fetched |
 
+`data/aqi_hourly.csv` keeps the **hourly** values behind each completed day (`date`, `hour`
+0–23 IST, `city`, `us_aqi`, `pm2_5`, `pm10`). It adds about 190 rows a day and is keyed on
+`(date, hour, city)`. It has no `fetched_at_utc` column: that would double the file's size,
+and `aqi_daily.csv` records the fetch time for the same day. The README uses it for a
+**time of day** table (`diurnal.py`): for each city, the 3-hour stretches with the lowest
+and highest mean US AQI over the last 30 days. A city appears once every hour has at least
+14 days of data. The profile is the CAMS model's daily cycle (night-time inversions,
+traffic peaks), not street-level readings.
+
 `data/latest.json` is for programs that just want today's numbers. It holds the latest
 snapshot and the latest full day for every city, with categories on both scales, and is
 rewritten on each run (it's the only file in `data/` that isn't append-only). Missing

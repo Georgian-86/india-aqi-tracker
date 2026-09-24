@@ -17,6 +17,7 @@ from common import (
     EVENTS_CSV_PATH,
     FORECAST_CSV_PATH,
     GASES_CSV_PATH,
+    HOURLY_CSV_PATH,
     IST,
     README_PATH,
     ROOT,
@@ -28,6 +29,7 @@ from common import (
     naqi,
     read_rows,
 )
+import diurnal
 import forecast_skill
 import report
 
@@ -380,6 +382,33 @@ def render_forecast_skill(
     return lines
 
 
+def render_time_of_day(hourly_rows: list[dict[str, str]]) -> list[str]:
+    """Cleanest and worst hours per city over the last 30 days (diurnal)."""
+    result = diurnal.profiles(hourly_rows)
+    if result is None:
+        return []  # needs diurnal.MIN_DAYS of hourly data
+    start, end, cities = result
+    lines = [
+        "",
+        f"**Time of day** ({start} to {end}, IST): the {diurnal.WINDOW_HOURS}-hour stretches "
+        "with the lowest and highest mean US AQI",
+        "",
+        "| City | Cleanest | Worst | Difference |",
+        "|---|---|---|--:|",
+    ]
+    for p in cities:
+        lines.append(
+            f"| {p.city} | {p.span(p.best_start)} ({p.best_mean:.0f}) | "
+            f"{p.span(p.worst_start)} ({p.worst_mean:.0f}) | {p.worst_mean - p.best_mean:.0f} |"
+        )
+    lines += [
+        "",
+        "<sub>From CAMS hourly values: the model's daily cycle (night-time inversions, "
+        "traffic), not street-level readings.</sub>",
+    ]
+    return lines
+
+
 EVENTS_SHOWN = 12  # most recent changes listed; the full log is in the CSV
 
 
@@ -422,6 +451,7 @@ def render_section(
     report_months: list[str] | None = None,
     forecast_rows: list[dict[str, str]] | None = None,
     event_rows: list[dict[str, str]] | None = None,
+    hourly_rows: list[dict[str, str]] | None = None,
 ) -> str:
     """as_of: today's IST date, to flag stale data (None skips the check).
     report_months: 'YYYY-MM' of existing reports/ files, linked at the end."""
@@ -466,6 +496,7 @@ def render_section(
     lines += render_summary(daily_rows or [])
     lines += render_india_summary(daily_rows or [], gas_rows or [])
     lines += render_forecast_skill(forecast_rows or [], daily_rows or [])
+    lines += render_time_of_day(hourly_rows or [])
     lines += ["", f"![US AQI trend by city]({CHART_URL})"]
     if report_months:
         recent_months = sorted(report_months, reverse=True)[:RECENT_REPORTS]
@@ -486,12 +517,13 @@ def update_readme(
     report_months: list[str] | None = None,
     forecast_rows: list[dict[str, str]] | None = None,
     event_rows: list[dict[str, str]] | None = None,
+    hourly_rows: list[dict[str, str]] | None = None,
 ) -> str:
     pattern = re.compile(re.escape(START) + r".*?" + re.escape(END), re.DOTALL)
     if not pattern.search(readme_text):
         raise ValueError(f"README is missing the {START} ... {END} markers")
     section = render_section(
-        rows, daily_rows, gas_rows, as_of, report_months, forecast_rows, event_rows
+        rows, daily_rows, gas_rows, as_of, report_months, forecast_rows, event_rows, hourly_rows
     )
     return pattern.sub(lambda _: section, readme_text, count=1)
 
@@ -504,6 +536,7 @@ def main(
     reports_dir: Path = ROOT / "reports",
     forecast_csv_path: Path = FORECAST_CSV_PATH,
     events_csv_path: Path = EVENTS_CSV_PATH,
+    hourly_csv_path: Path = HOURLY_CSV_PATH,
 ) -> int:
     try:
         new_text = update_readme(
@@ -515,6 +548,7 @@ def main(
             report_months=report.report_months(reports_dir),
             forecast_rows=read_rows(forecast_csv_path),
             event_rows=read_rows(events_csv_path),
+            hourly_rows=read_rows(hourly_csv_path),
         )
     except (OSError, ValueError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
