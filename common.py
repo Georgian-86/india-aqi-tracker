@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parent
 CSV_PATH = ROOT / "data" / "aqi.csv"
 DAILY_CSV_PATH = ROOT / "data" / "aqi_daily.csv"
 GASES_CSV_PATH = ROOT / "data" / "aqi_daily_gases.csv"
+FORECAST_CSV_PATH = ROOT / "data" / "aqi_forecast.csv"
 CHART_PATH = ROOT / "charts" / "aqi_trend.png"
 README_PATH = ROOT / "README.md"
 
@@ -40,6 +41,12 @@ DAILY_COLUMNS = [
 # (append-only) never needs its header rewritten. CPCB averaging periods:
 # NO2 24-hour mean, O3 maximum 8-hour mean.
 GAS_COLUMNS = ["date", "city", "no2_mean", "o3_max8h", "fetched_at_utc"]
+# CAMS forecast for the day after the snapshot (`date` is the forecast day;
+# `issued` is the IST day it was fetched), kept to compare with the actual day later.
+FORECAST_COLUMNS = [
+    "date", "city", "issued", "us_aqi_mean", "us_aqi_max", "pm2_5_mean", "pm10_mean",
+    "fetched_at_utc",
+]
 
 # US EPA AQI breakpoints: (upper bound inclusive, label).
 AQI_CATEGORIES: list[tuple[int, str]] = [

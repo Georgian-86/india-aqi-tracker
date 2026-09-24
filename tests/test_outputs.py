@@ -158,9 +158,34 @@ def test_main_reads_both_csvs(tmp_path, payload):
     fetch.append_rows(snap, fetch.parse_payload(payload, "2026-09-23T03:17:00Z"))
     rows, _ = fetch.parse_daily(payload, "2026-09-23T03:17:00Z")
     fetch.append_rows(daily, rows, fetch.DAILY_COLUMNS)
-    assert update_readme.main(readme, snap, daily, tmp_path / "no_gases.csv") == 0
+    forecast = tmp_path / "f.csv"
+    fetch.append_rows(forecast, fetch.parse_forecast(payload, "2026-09-23T03:17:00Z")[0],
+                      fetch.FORECAST_COLUMNS)
+    assert update_readme.main(readme, snap, daily, tmp_path / "no_gases.csv",
+                              tmp_path / "no_reports", forecast) == 0
     text = readme.read_text()
     assert "**Full day 2026-09-22**" in text and "| Mumbai | 74 |" in text
+    assert "**Forecast for 2026-09-24** (CAMS, full-day mean US AQI): Delhi " in text
+
+
+def forecast_row(city, mean, issued="2026-09-24", day="2026-09-25"):
+    return {"date": day, "city": city, "issued": issued, "us_aqi_mean": mean,
+            "us_aqi_max": "", "pm2_5_mean": "", "pm10_mean": "", "fetched_at_utc": "x"}
+
+
+def test_forecast_line_only_for_forecast_issued_with_snapshot():
+    from common import CITIES
+    a, b = CITIES[0][0], CITIES[1][0]
+    snaps = [snap_row(a, "150"), snap_row(b, "60")]  # snapshot day 2026-09-24
+    fc = [forecast_row(b, "95.4"), forecast_row(a, "181.0"),
+          forecast_row(a, "999", issued="2026-09-23", day="2026-09-24")]  # stale issue
+    section = update_readme.render_section(snaps, forecast_rows=fc)
+    assert (f"**Forecast for 2026-09-25** (CAMS, full-day mean US AQI): "
+            f"{a} 181 🔴 · {b} 95 🟡") in section  # CITIES order, not file order
+    assert "999" not in section
+    # A forecast issued on an older day than the snapshot isn't shown.
+    old = update_readme.render_section(snaps, forecast_rows=fc[2:])
+    assert "Forecast for" not in old
 
 
 def test_change_hidden_when_times_of_day_differ(payload, tmp_path):

@@ -14,6 +14,7 @@ from common import (
     HAZARDOUS,
     CSV_PATH,
     DAILY_CSV_PATH,
+    FORECAST_CSV_PATH,
     GASES_CSV_PATH,
     IST,
     README_PATH,
@@ -329,12 +330,31 @@ def _headline(today: dict[str, dict[str, str]]) -> list[str]:
     ]
 
 
+def render_forecast(forecast_rows: list[dict[str, str]], snapshot_day: str) -> list[str]:
+    """One line with tomorrow's forecast, if one was issued on the snapshot's day."""
+    latest = {r["city"]: r for r in forecast_rows if r["issued"] == snapshot_day}
+    parts = []
+    for city, _, _ in CITIES:
+        r = latest.get(city)
+        if r and r["us_aqi_mean"]:
+            cat = aqi_category(r["us_aqi_mean"])
+            parts.append(f"{city} {float(r['us_aqi_mean']):.0f} {CATEGORY_ICON[cat]}")
+    if not parts:
+        return []
+    day = next(iter(latest.values()))["date"]
+    return [
+        f"**Forecast for {day}** (CAMS, full-day mean US AQI): {' · '.join(parts)}",
+        "",
+    ]
+
+
 def render_section(
     rows: list[dict[str, str]],
     daily_rows: list[dict[str, str]] | None = None,
     gas_rows: list[dict[str, str]] | None = None,
     as_of: date | None = None,
     report_months: list[str] | None = None,
+    forecast_rows: list[dict[str, str]] | None = None,
 ) -> str:
     """as_of: today's IST date, to flag stale data (None skips the check).
     report_months: 'YYYY-MM' of existing reports/ files, linked at the end."""
@@ -349,7 +369,9 @@ def render_section(
     details = [f"fetched {fetched}"] if fetched else []
     details.append(f"{days} day{'s' if days != 1 else ''} collected")
 
-    lines = _staleness_warning(latest, as_of) + _headline(today) + [
+    lines = _staleness_warning(latest, as_of) + _headline(today)
+    lines += render_forecast(forecast_rows or [], latest)
+    lines += [
         f"**Latest snapshot: {latest}** ({' · '.join(details)})",
         "",
         "| City | US AQI | Category | vs prev. | PM2.5 (µg/m³) | PM10 (µg/m³) | NO₂ (µg/m³) | O₃ (µg/m³) |",
@@ -393,11 +415,12 @@ def update_readme(
     gas_rows: list[dict[str, str]] | None = None,
     as_of: date | None = None,
     report_months: list[str] | None = None,
+    forecast_rows: list[dict[str, str]] | None = None,
 ) -> str:
     pattern = re.compile(re.escape(START) + r".*?" + re.escape(END), re.DOTALL)
     if not pattern.search(readme_text):
         raise ValueError(f"README is missing the {START} ... {END} markers")
-    section = render_section(rows, daily_rows, gas_rows, as_of, report_months)
+    section = render_section(rows, daily_rows, gas_rows, as_of, report_months, forecast_rows)
     return pattern.sub(lambda _: section, readme_text, count=1)
 
 
@@ -407,6 +430,7 @@ def main(
     daily_csv_path: Path = DAILY_CSV_PATH,
     gases_csv_path: Path = GASES_CSV_PATH,
     reports_dir: Path = ROOT / "reports",
+    forecast_csv_path: Path = FORECAST_CSV_PATH,
 ) -> int:
     try:
         new_text = update_readme(
@@ -416,6 +440,7 @@ def main(
             read_rows(gases_csv_path),
             as_of=datetime.now(IST).date(),
             report_months=report.report_months(reports_dir),
+            forecast_rows=read_rows(forecast_csv_path),
         )
     except (OSError, ValueError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)

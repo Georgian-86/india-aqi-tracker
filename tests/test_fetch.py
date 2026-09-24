@@ -5,7 +5,7 @@ import pytest
 import requests
 
 import fetch
-from common import CITIES, COLUMNS, DAILY_COLUMNS
+from common import CITIES, COLUMNS, DAILY_COLUMNS, FORECAST_COLUMNS
 from conftest import FakeSession, make_response
 
 FETCHED_AT = "2026-09-23T03:17:00Z"
@@ -22,6 +22,7 @@ def run_main(path, outcomes, now=NOW, daily_path=None):
         csv_path=path,
         daily_csv_path=daily_path,
         gases_csv_path=path.with_name("aqi_daily_gases.csv"),
+        forecast_csv_path=path.with_name("aqi_forecast.csv"),
         session=session,
         sleep=lambda s: None,
         now=now,
@@ -39,7 +40,7 @@ def test_build_params_single_request_for_all_cities():
     assert params["longitude"].split(",") == [str(lon) for _, _, lon in CITIES]
     assert params["current"] == "us_aqi,pm2_5,pm10,nitrogen_dioxide,ozone"
     assert params["hourly"] == "us_aqi,pm2_5,pm10,nitrogen_dioxide,ozone"
-    assert (params["past_days"], params["forecast_days"]) == ("1", "1")
+    assert (params["past_days"], params["forecast_days"]) == ("1", "2")
     assert fetch.build_params(past_days=92)["past_days"] == "92"
     assert params["timezone"] == "Asia/Kolkata"
 
@@ -302,6 +303,7 @@ def test_main_backfill_then_daily_run_dedupes(tmp_path, payload):
     session = FakeSession([make_response(200, with_history(payload, 5))])
     assert fetch.main(csv_path=path, daily_csv_path=daily, session=session,
                       gases_csv_path=tmp_path / "gases.csv",
+                      forecast_csv_path=tmp_path / "forecast.csv",
                       sleep=lambda s: None, now=NOW, past_days=5) == 0
     assert session.calls[0]["params"]["past_days"] == "5"
     assert len(read_csv(daily)) == 1 + 5 * N
@@ -361,3 +363,43 @@ def test_backfill_fills_gases_for_days_already_in_daily_csv(tmp_path, payload):
     assert run_main(path, [make_response(200, payload)], daily_path=daily) == 0
     assert len(read_csv(daily)) == N + 1  # nothing duplicated
     assert len(read_csv(tmp_path / "aqi_daily_gases.csv")) == N + 1  # gases filled in
+
+
+# --- forecast ---------------------------------------------------------------
+
+def test_parse_forecast_is_tomorrows_full_day(payload):
+    rows, missing = fetch.parse_forecast(payload, FETCHED_AT)
+    assert missing == []
+    assert [r["city"] for r in rows] == [c for c, _, _ in CITIES]
+    delhi = rows[0]
+    assert (delhi["date"], delhi["issued"]) == ("2026-09-24", "2026-09-23")
+    tomorrow = [v for v in payload[0]["hourly"]["us_aqi"][48:72] if v is not None]
+    assert delhi["us_aqi_mean"] == f"{sum(tomorrow) / len(tomorrow):.1f}"
+    assert delhi["us_aqi_max"] == str(max(tomorrow))
+
+
+def test_parse_forecast_missing_hours(payload):
+    for i in range(48, 72):
+        payload[1]["hourly"]["us_aqi"][i] = None
+    rows, missing = fetch.parse_forecast(payload, FETCHED_AT)
+    assert missing == [CITIES[1][0]] and len(rows) == N - 1
+
+
+def test_main_stores_forecast_first_issue_wins(tmp_path, payload, capsys):
+    path = tmp_path / "aqi.csv"
+    forecast = tmp_path / "aqi_forecast.csv"
+    assert run_main(path, [make_response(200, payload)]) == 0
+    rows = read_csv(forecast)
+    assert rows[0] == FORECAST_COLUMNS and len(rows) == 1 + N
+    # A later run (e.g. the backup cron) with a different forecast changes nothing.
+    for loc in payload:
+        loc["hourly"]["us_aqi"][48:72] = [999] * 24
+    assert run_main(path, [make_response(200, payload)]) == 0
+    assert read_csv(forecast) == rows
+
+
+def test_missing_forecast_is_not_fatal(tmp_path, payload, capsys):
+    for loc in payload:
+        loc["hourly"]["us_aqi"][48:72] = [None] * 24
+    assert run_main(tmp_path / "aqi.csv", [make_response(200, payload)]) == 0
+    assert "WARNING: no forecast for" in capsys.readouterr().err

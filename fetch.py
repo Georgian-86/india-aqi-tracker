@@ -26,6 +26,8 @@ from common import (
     CSV_PATH,
     DAILY_COLUMNS,
     DAILY_CSV_PATH,
+    FORECAST_COLUMNS,
+    FORECAST_CSV_PATH,
     GAS_COLUMNS,
     GASES_CSV_PATH,
     IST,
@@ -71,9 +73,9 @@ def build_params(past_days: int = 1) -> dict[str, str]:
         "longitude": ",".join(f"{lon}" for _, _, lon in CITIES),
         "current": ",".join(CURRENT_VARS),
         "hourly": ",".join(HOURLY_VARS),
-        # The previous `past_days` IST days + today, in local hours.
+        # The previous `past_days` IST days, today and tomorrow (forecast), in local hours.
         "past_days": str(past_days),
-        "forecast_days": "1",
+        "forecast_days": "2",
         "timezone": TIMEZONE,
     }
 
@@ -206,6 +208,27 @@ def parse_daily(
     return rows, skipped
 
 
+def parse_forecast(
+    payload: list[dict], fetched_at_utc: str
+) -> tuple[list[dict[str, str]], list[str]]:
+    """Full-day stats for the IST day after current.time: the CAMS forecast.
+
+    Returns (rows, missing cities). Same statistics as parse_daily, so a
+    forecast can be compared with the actual day once it has passed.
+    """
+    rows, missing = [], []
+    for (city, _, _), loc in zip(CITIES, payload):
+        today = datetime.fromisoformat(loc["current"]["time"]).date()
+        hourly = loc.get("hourly") or {}
+        day = (today + timedelta(days=1)).isoformat()
+        row = day_stats(hourly, hourly.get("time") or [], day, city, fetched_at_utc)
+        if row is None:
+            missing.append(city)
+        else:
+            rows.append({**row, "issued": today.isoformat()})
+    return rows, missing
+
+
 def day_stats(
     hourly: dict, times: list[str], day: str, city: str, fetched_at_utc: str
 ) -> dict[str, str] | None:
@@ -270,6 +293,7 @@ def main(
     csv_path: Path = CSV_PATH,
     daily_csv_path: Path = DAILY_CSV_PATH,
     gases_csv_path: Path = GASES_CSV_PATH,
+    forecast_csv_path: Path = FORECAST_CSV_PATH,
     session: requests.Session | None = None,
     sleep=time.sleep,
     now: datetime | None = None,
@@ -282,6 +306,7 @@ def main(
         rows = parse_payload(payload, fetched_at)
         check_fresh(payload, now)
         daily_rows, daily_skipped = parse_daily(payload, fetched_at, past_days)
+        forecast_rows, forecast_missing = parse_forecast(payload, fetched_at)
     except (requests.RequestException, FetchError, ValueError, KeyError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
@@ -307,6 +332,14 @@ def main(
     gas_rows = [r for r in daily_rows if r["no2_mean"] or r["o3_max8h"]]
     gas_written = append_rows(gases_csv_path, gas_rows, GAS_COLUMNS)
     print(f"Wrote {gas_written} new row(s) to {gases_csv_path}")
+
+    # First forecast issued for a day wins (dedupe on date+city), so a backup
+    # run later the same morning doesn't replace it.
+    forecast_written = append_rows(forecast_csv_path, forecast_rows, FORECAST_COLUMNS)
+    print(f"Wrote {forecast_written} new row(s) to {forecast_csv_path}")
+    if forecast_missing:
+        # Not fatal: the forecast is extra; the README just omits it.
+        print(f"WARNING: no forecast for {', '.join(forecast_missing)}", file=sys.stderr)
 
     failed = False
     if missing:

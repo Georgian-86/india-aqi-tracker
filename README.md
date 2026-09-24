@@ -92,7 +92,10 @@ Every day at **03:17 UTC (08:47 IST)** the GitHub Actions workflow
    The same request also returns **yesterday's 24 hourly values**. From these it computes
    full-day statistics (mean and peak AQI, mean PM2.5 and PM10) into
    [`data/aqi_daily.csv`](data/aqi_daily.csv). Unlike the snapshot, these don't depend on
-   the time of day the job ran.
+   the time of day the job ran. It also returns **tomorrow's 24 forecast hours**. The same
+   statistics computed from these go to [`data/aqi_forecast.csv`](data/aqi_forecast.csv),
+   and a one-line forecast appears above the snapshot table. A forecast that can't be computed
+   only prints a warning; it doesn't fail the run.
    Rows are keyed by `(date, city)` using the IST date, so re-running on the same day never
    duplicates data. Network errors, timeouts, HTTP 429 and 5xx are retried with exponential
    backoff. The run fails (goes red) instead of recording something wrong if the retries run
@@ -195,6 +198,22 @@ time the page is viewed. So unlike the README's own staleness warning, which is 
 by the workflow, it also shows when the workflow has stopped running altogether (for
 example, a delayed or disabled schedule).
 The `schema_version` field is bumped only on breaking changes.
+
+`data/aqi_forecast.csv` records the CAMS **forecast** for the day after each snapshot, with
+the same statistics as `aqi_daily.csv`. It is kept so forecasts can later be checked against
+what the model reported for the day once it had passed:
+
+| column | meaning |
+|---|---|
+| `date` | the IST day being forecast |
+| `city` | city name |
+| `issued` | the IST day the forecast was fetched (the day before `date`) |
+| `us_aqi_mean`, `us_aqi_max` | forecast mean and peak hourly US AQI |
+| `pm2_5_mean`, `pm10_mean` | forecast mean concentration, µg/m³ |
+| `fetched_at_utc` | when it was fetched |
+
+The first forecast stored for a `(date, city)` is kept, so the backup run later the same
+morning doesn't overwrite it.
 
 `data/aqi_daily_gases.csv` holds gas statistics for the same days. It's a separate file so
 the append-only `aqi_daily.csv` never needs its header rewritten:
