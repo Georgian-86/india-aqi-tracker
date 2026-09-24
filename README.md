@@ -137,6 +137,17 @@ Every day at **03:17 UTC (08:47 IST)** the GitHub Actions workflow
    days. A lower threshold would have kept Delhi's alert open more than half the year.
    Watch the repo (Custom → Issues) to be notified.
 
+A second, lighter workflow, [`events.yml`](.github/workflows/events.yml), runs **every 3
+hours** (at :45 UTC). **`events.py`** reads the current US AQI for all cities and logs a row to
+[`data/aqi_events.csv`](data/aqi_events.csv) only when a city's **category has changed**
+since its last logged one, for example Delhi going from Unhealthy to Very Unhealthy. It
+commits only when something changed, so the history follows the air: nothing on a steady
+day, several commits when smog or dust moves through. A change counts only once the reading
+is at least 10 points past the edge of the old category, so a city hovering around a
+boundary (say 98–103) doesn't flip back and forth. The daily README lists the changes from
+the 24 hours before its snapshot. Both workflows share a concurrency group, so they never
+push at the same time.
+
 A **backup run at 06:17 UTC (11:47 IST)** does the same thing. It adds nothing if the morning
 run succeeded, and fills in any city the morning run missed (for example, if GitHub skipped
 the scheduled run, which it sometimes does under load).
@@ -218,6 +229,17 @@ what the model reported for the day once it had passed:
 
 The first forecast stored for a `(date, city)` is kept, so the backup run later the same
 morning doesn't overwrite it.
+
+`data/aqi_events.csv` is the category-change log written by `events.py`. A city's first row
+has an empty `from_category` and just records its starting state:
+
+| column | meaning |
+|---|---|
+| `time_ist` | when the reading applies, IST (`YYYY-MM-DDTHH:MM`, from the API's `current.time`) |
+| `city` | city name |
+| `from_category`, `to_category` | US AQI category before and after |
+| `us_aqi`, `pm2_5`, `pm10` | the reading that triggered the change |
+| `fetched_at_utc` | when it was fetched |
 
 `data/aqi_daily_gases.csv` holds gas statistics for the same days. It's a separate file so
 the append-only `aqi_daily.csv` never needs its header rewritten:

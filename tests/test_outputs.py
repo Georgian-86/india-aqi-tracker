@@ -162,7 +162,7 @@ def test_main_reads_both_csvs(tmp_path, payload):
     fetch.append_rows(forecast, fetch.parse_forecast(payload, "2026-09-23T03:17:00Z")[0],
                       fetch.FORECAST_COLUMNS)
     assert update_readme.main(readme, snap, daily, tmp_path / "no_gases.csv",
-                              tmp_path / "no_reports", forecast) == 0
+                              tmp_path / "no_reports", forecast, tmp_path / "no_events.csv") == 0
     text = readme.read_text()
     assert "**Full day 2026-09-22**" in text and "| Mumbai | 74 |" in text
     assert "**Forecast for 2026-09-24** (CAMS, full-day mean US AQI): Delhi " in text
@@ -428,3 +428,35 @@ def test_headline_omitted_for_single_city():
     from common import CITIES
     section = update_readme.render_section([snap_row(CITIES[0][0], "100")])
     assert "Right now" not in section
+
+
+def event(city, frm, to, time_ist):
+    return {"time_ist": time_ist, "city": city, "from_category": frm, "to_category": to,
+            "us_aqi": "", "pm2_5": "", "pm10": "", "fetched_at_utc": "x"}
+
+
+def test_events_line_covers_24h_before_snapshot():
+    from common import CITIES
+    a, b = CITIES[0][0], CITIES[1][0]
+    snaps = [snap_row(a, "150"), snap_row(b, "60")]  # fetched 2026-09-24 08:47 IST
+    ev = [event(a, "", "Unhealthy", "2026-09-20T08:45"),  # initial state: never listed
+          event(a, "Unhealthy", "Very Unhealthy", "2026-09-23T08:45"),  # > 24 h before
+          event(b, "Moderate", "Good", "2026-09-24T05:45"),
+          event(a, "Very Unhealthy", "Unhealthy", "2026-09-23T20:45"),
+          event(b, "Good", "Moderate", "2026-09-24T11:45")]  # after the snapshot
+    section = update_readme.render_section(snaps, event_rows=ev)
+    assert ("**Category changes in the last 24 h** (IST, [full log](data/aqi_events.csv)): "
+            f"{a} Very Unhealthy → 🔴 Unhealthy (20:45) · {b} Moderate → 🟢 Good (05:45)") in section
+    quiet = update_readme.render_section(snaps, event_rows=ev[:2])
+    assert "**Category changes in the last 24 h:** none." in quiet
+    assert "Category changes" not in update_readme.render_section(snaps)  # no log yet
+
+
+def test_events_line_caps_length():
+    from common import CITIES
+    a = CITIES[0][0]
+    n = update_readme.EVENTS_SHOWN + 3
+    ev = [event(a, "Good", "Moderate", f"2026-09-24T0{i // 10}:{i % 10}0") for i in range(n)]
+    section = update_readme.render_section([snap_row(a, "80"), snap_row(CITIES[1][0], "70")],
+                                           event_rows=ev)
+    assert "(and 3 earlier)" in section

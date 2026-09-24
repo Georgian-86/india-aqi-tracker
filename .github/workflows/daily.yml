@@ -27,7 +27,7 @@ permissions:
   issues: write # alerts.py opens/comments/closes "aqi-alert" issues
 
 concurrency:
-  group: daily-aqi
+  group: aqi-data
   cancel-in-progress: false
 
 jobs:

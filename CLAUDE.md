@@ -84,6 +84,16 @@ Open-Meteo Air Quality API (CAMS data) into
   India AQI without O₃, attribution) for other programs. It is the one file in `data/` that
   is rewritten each run. Keep it deterministic (no generation timestamp) so it only changes
   with the data. Bump `SCHEMA_VERSION` on any breaking change to its shape.
+- `events.py` (workflow `events.yml`, every 3 h at :45) logs US AQI **category changes** to
+  `data/aqi_events.csv` (`EVENT_COLUMNS`, keyed on `(time_ist, city)` via
+  `append_rows(..., key=...)`). It commits only when a change was logged, so the number of
+  commits per day follows real events. Don't add commits for any other reason. A change
+  needs the reading `MARGIN` points past the edge of the recorded category (`changed()`,
+  hysteresis against boundary flapping). State is the last row per city in the CSV; the
+  first row per city has an empty `from_category`. It makes a small current-only request
+  and validates count, order and freshness like `fetch.py`. `daily.yml` and `events.yml`
+  share the `aqi-data` concurrency group so pushes never race. The README lists the
+  changes from the 24 h before the snapshot (`render_events`).
 - `tests/`: pytest. The fixture `tests/fixtures/open_meteo_response.json` mirrors the real
   multi-location response (a JSON array in coordinate order).
 - `.github/workflows/daily.yml`: cron `17 3 * * *` (08:47 IST), a backup cron `17 6 * * *`
@@ -139,7 +149,8 @@ Open-Meteo Air Quality API (CAMS data) into
   Don't hand-edit them.
 - Keep the Attribution section in README (CAMS + Open-Meteo, CC BY 4.0). It's a licence
   requirement.
-- Bot commits use the message `data: AQI snapshot YYYY-MM-DD`. Use normal descriptive
+- Bot commits use the message `data: AQI snapshot YYYY-MM-DD` (daily) or
+  `data: AQI change YYYY-MM-DD HH:MM IST: City → Category, …` (events). Use normal descriptive
   messages for code changes.
 
 ## Commands

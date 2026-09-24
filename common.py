@@ -12,6 +12,7 @@ CSV_PATH = ROOT / "data" / "aqi.csv"
 DAILY_CSV_PATH = ROOT / "data" / "aqi_daily.csv"
 GASES_CSV_PATH = ROOT / "data" / "aqi_daily_gases.csv"
 FORECAST_CSV_PATH = ROOT / "data" / "aqi_forecast.csv"
+EVENTS_CSV_PATH = ROOT / "data" / "aqi_events.csv"
 CHART_PATH = ROOT / "charts" / "aqi_trend.png"
 README_PATH = ROOT / "README.md"
 
@@ -41,6 +42,11 @@ DAILY_COLUMNS = [
 # (append-only) never needs its header rewritten. CPCB averaging periods:
 # NO2 24-hour mean, O3 maximum 8-hour mean.
 GAS_COLUMNS = ["date", "city", "no2_mean", "o3_max8h", "fetched_at_utc"]
+# A city's US AQI category changing (events.py). Keyed on (time_ist, city).
+EVENT_COLUMNS = [
+    "time_ist", "city", "from_category", "to_category", "us_aqi", "pm2_5", "pm10",
+    "fetched_at_utc",
+]
 # CAMS forecast for the day after the snapshot (`date` is the forecast day;
 # `issued` is the IST day it was fetched), kept to compare with the actual day later.
 FORECAST_COLUMNS = [

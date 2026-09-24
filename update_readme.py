@@ -14,6 +14,7 @@ from common import (
     HAZARDOUS,
     CSV_PATH,
     DAILY_CSV_PATH,
+    EVENTS_CSV_PATH,
     FORECAST_CSV_PATH,
     GASES_CSV_PATH,
     IST,
@@ -348,6 +349,40 @@ def render_forecast(forecast_rows: list[dict[str, str]], snapshot_day: str) -> l
     ]
 
 
+EVENTS_SHOWN = 12  # most recent changes listed; the full log is in the CSV
+
+
+def render_events(event_rows: list[dict[str, str]], snapshot_rows: list[dict[str, str]]) -> list[str]:
+    """Category changes (events.py) in the 24 h before the latest snapshot."""
+    if not event_rows or not snapshot_rows:
+        return []  # the events job hasn't logged anything yet
+    stamps = [r["fetched_at_utc"] for r in snapshot_rows]
+    try:
+        end = datetime.fromisoformat(max(stamps).replace("Z", "+00:00")).astimezone(IST)
+    except ValueError:
+        return []
+    start = (end - timedelta(hours=24)).strftime("%Y-%m-%dT%H:%M")
+    end_s = end.strftime("%Y-%m-%dT%H:%M")
+    recent = sorted(
+        (e for e in event_rows if e["from_category"] and start < e["time_ist"] <= end_s),
+        key=lambda e: e["time_ist"],
+    )
+    if not recent:
+        return ["**Category changes in the last 24 h:** none.", ""]
+    shown = recent[-EVENTS_SHOWN:]
+    parts = [
+        f"{e['city']} {e['from_category']} → {CATEGORY_ICON.get(e['to_category'], '')} "
+        f"{e['to_category']} ({e['time_ist'][11:]})"
+        for e in shown
+    ]
+    more = f" (and {len(recent) - len(shown)} earlier)" if len(recent) > len(shown) else ""
+    return [
+        f"**Category changes in the last 24 h** (IST, [full log](data/aqi_events.csv)): "
+        f"{' · '.join(parts)}{more}",
+        "",
+    ]
+
+
 def render_section(
     rows: list[dict[str, str]],
     daily_rows: list[dict[str, str]] | None = None,
@@ -355,6 +390,7 @@ def render_section(
     as_of: date | None = None,
     report_months: list[str] | None = None,
     forecast_rows: list[dict[str, str]] | None = None,
+    event_rows: list[dict[str, str]] | None = None,
 ) -> str:
     """as_of: today's IST date, to flag stale data (None skips the check).
     report_months: 'YYYY-MM' of existing reports/ files, linked at the end."""
@@ -371,6 +407,7 @@ def render_section(
 
     lines = _staleness_warning(latest, as_of) + _headline(today)
     lines += render_forecast(forecast_rows or [], latest)
+    lines += render_events(event_rows or [], list(today.values()))
     lines += [
         f"**Latest snapshot: {latest}** ({' · '.join(details)})",
         "",
@@ -416,11 +453,14 @@ def update_readme(
     as_of: date | None = None,
     report_months: list[str] | None = None,
     forecast_rows: list[dict[str, str]] | None = None,
+    event_rows: list[dict[str, str]] | None = None,
 ) -> str:
     pattern = re.compile(re.escape(START) + r".*?" + re.escape(END), re.DOTALL)
     if not pattern.search(readme_text):
         raise ValueError(f"README is missing the {START} ... {END} markers")
-    section = render_section(rows, daily_rows, gas_rows, as_of, report_months, forecast_rows)
+    section = render_section(
+        rows, daily_rows, gas_rows, as_of, report_months, forecast_rows, event_rows
+    )
     return pattern.sub(lambda _: section, readme_text, count=1)
 
 
@@ -431,6 +471,7 @@ def main(
     gases_csv_path: Path = GASES_CSV_PATH,
     reports_dir: Path = ROOT / "reports",
     forecast_csv_path: Path = FORECAST_CSV_PATH,
+    events_csv_path: Path = EVENTS_CSV_PATH,
 ) -> int:
     try:
         new_text = update_readme(
@@ -441,6 +482,7 @@ def main(
             as_of=datetime.now(IST).date(),
             report_months=report.report_months(reports_dir),
             forecast_rows=read_rows(forecast_csv_path),
+            event_rows=read_rows(events_csv_path),
         )
     except (OSError, ValueError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)

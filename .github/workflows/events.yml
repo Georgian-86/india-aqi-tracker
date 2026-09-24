@@ -1,0 +1,53 @@
+name: AQI category changes
+
+# Every 3 hours, log any city whose US AQI category changed (events.py) and
+# commit only if something did. Minute 45 keeps clear of the daily job (:17).
+on:
+  schedule:
+    - cron: "45 */3 * * *"
+  workflow_dispatch:
+
+env:
+  PYTHONUNBUFFERED: "1"
+
+permissions:
+  contents: write
+
+# Shared with daily.yml so the two never push to main at the same time.
+concurrency:
+  group: aqi-data
+  cancel-in-progress: false
+
+jobs:
+  events:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run tests
+        run: pytest -q
+
+      - name: Detect category changes
+        run: python events.py --summary-file "$RUNNER_TEMP/commit-msg.txt"
+
+      - name: Commit and push if changed
+        run: |
+          if [ ! -s "$RUNNER_TEMP/commit-msg.txt" ]; then
+            echo "No category changes."
+            exit 0
+          fi
+          git config user.name "Georgian-86"
+          git config user.email "140907660+Georgian-86@users.noreply.github.com"
+          git add data/aqi_events.csv
+          git commit -F "$RUNNER_TEMP/commit-msg.txt"
+          git pull --rebase origin main
+          git push origin HEAD:main
