@@ -29,6 +29,8 @@ from common import (
     FORECAST_COLUMNS,
     FORECAST_CSV_PATH,
     GAS_COLUMNS,
+    HOURLY_COLUMNS,
+    HOURLY_CSV_PATH,
     GASES_CSV_PATH,
     IST,
     read_rows,
@@ -208,6 +210,34 @@ def parse_daily(
     return rows, skipped
 
 
+def parse_hourly(payload: list[dict], days: int = 1) -> list[dict[str, str]]:
+    """Hourly rows for each of the `days` completed IST days before current.time.
+
+    Hours with no us_aqi are left out; the daily stats decide whether a day
+    is complete enough.
+    """
+    rows = []
+    for (city, _, _), loc in zip(CITIES, payload):
+        today = datetime.fromisoformat(loc["current"]["time"]).date()
+        first = (today - timedelta(days=days)).isoformat()
+        hourly = loc.get("hourly") or {}
+        aqi, pm25, pm10 = (hourly.get(k) or [] for k in ("us_aqi", "pm2_5", "pm10"))
+        for i, t in enumerate(hourly.get("time") or []):
+            if not first <= t[:10] < today.isoformat():
+                continue
+            if i >= len(aqi) or aqi[i] is None:
+                continue
+            rows.append({
+                "date": t[:10],
+                "hour": t[11:13],
+                "city": city,
+                "us_aqi": _fmt(aqi[i]),
+                "pm2_5": _fmt(pm25[i]) if i < len(pm25) else "",
+                "pm10": _fmt(pm10[i]) if i < len(pm10) else "",
+            })
+    return sorted(rows, key=lambda r: (r["date"], r["hour"]))  # stable: CITIES order within
+
+
 def parse_forecast(
     payload: list[dict], fetched_at_utc: str
 ) -> tuple[list[dict[str, str]], list[str]]:
@@ -298,6 +328,7 @@ def main(
     daily_csv_path: Path = DAILY_CSV_PATH,
     gases_csv_path: Path = GASES_CSV_PATH,
     forecast_csv_path: Path = FORECAST_CSV_PATH,
+    hourly_csv_path: Path = HOURLY_CSV_PATH,
     session: requests.Session | None = None,
     sleep=time.sleep,
     now: datetime | None = None,
@@ -310,6 +341,7 @@ def main(
         rows = parse_payload(payload, fetched_at)
         check_fresh(payload, now)
         daily_rows, daily_skipped = parse_daily(payload, fetched_at, past_days)
+        hourly_rows = parse_hourly(payload, past_days)
         forecast_rows, forecast_missing = parse_forecast(payload, fetched_at)
     except (requests.RequestException, FetchError, ValueError, KeyError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
@@ -339,6 +371,10 @@ def main(
 
     # First forecast issued for a day wins (dedupe on date+city), so a backup
     # run later the same morning doesn't replace it.
+    hourly_written = append_rows(hourly_csv_path, hourly_rows, HOURLY_COLUMNS,
+                                 key=("date", "hour", "city"))
+    print(f"Wrote {hourly_written} new row(s) to {hourly_csv_path}")
+
     forecast_written = append_rows(forecast_csv_path, forecast_rows, FORECAST_COLUMNS)
     print(f"Wrote {forecast_written} new row(s) to {forecast_csv_path}")
     if forecast_missing:
