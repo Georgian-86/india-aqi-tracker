@@ -76,20 +76,20 @@ Pune and Ahmedabad**, once a day and commits the result to this repository. The 
 | Pune | 30 | · | · | · | · | · | PM2.5 15 · PM10 11 · NO₂ 4 |
 | Ahmedabad | 26 | 4 | · | · | · | · | PM10 18 · PM2.5 9 · NO₂ 3 |
 
-**Time of day** (2026-08-25 to 2026-09-23, IST): the 3-hour stretches with the lowest and highest mean US AQI
+**Time of day** (2026-08-25 to 2026-09-23, IST): the 3-hour stretches with the lowest and highest mean PM2.5
 
-| City | Cleanest | Worst | Difference |
+| City | Cleanest (µg/m³) | Worst (µg/m³) | Worst ÷ cleanest |
 |---|---|---|--:|
-| Delhi | 22:00–01:00 (156) | 17:00–20:00 (182) | 26 |
-| Mumbai | 00:00–03:00 (62) | 16:00–19:00 (70) | 8 |
-| Bengaluru | 00:00–03:00 (52) | 18:00–21:00 (53) | 1 |
-| Kolkata | 20:00–23:00 (84) | 15:00–18:00 (95) | 10 |
-| Chennai | 06:00–09:00 (69) | 17:00–20:00 (98) | 29 |
-| Hyderabad | 03:00–06:00 (70) | 16:00–19:00 (73) | 3 |
-| Pune | 00:00–03:00 (45) | 17:00–20:00 (48) | 3 |
-| Ahmedabad | 22:00–01:00 (69) | 17:00–20:00 (74) | 5 |
+| Delhi | 15:00–18:00 (53) | 22:00–01:00 (80) | 1.5× |
+| Mumbai | 04:00–07:00 (14) | 12:00–15:00 (18) | 1.3× |
+| Bengaluru | 04:00–07:00 (9) | 19:00–22:00 (18) | 2.1× |
+| Kolkata | 14:00–17:00 (22) | 21:00–00:00 (32) | 1.4× |
+| Chennai | 05:00–08:00 (15) | 18:00–21:00 (23) | 1.5× |
+| Hyderabad | 14:00–17:00 (15) | 21:00–00:00 (29) | 1.9× |
+| Pune | 05:00–08:00 (7) | 20:00–23:00 (13) | 1.8× |
+| Ahmedabad | 06:00–09:00 (14) | 19:00–22:00 (27) | 1.9× |
 
-<sub>From CAMS hourly values: the model's daily cycle (night-time inversions, traffic), not street-level readings.</sub>
+<sub>From CAMS hourly PM2.5: the model's daily cycle (night-time inversions, traffic), not street-level readings. Hourly US AQI isn't used here: it's built from 24-hour PM averages, so it barely changes within a day.</sub>
 
 ![US AQI trend by city](https://raw.githubusercontent.com/Georgian-86/india-aqi-tracker/charts/aqi_trend.png)
 
