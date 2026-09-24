@@ -230,6 +230,13 @@ what the model reported for the day once it had passed:
 The first forecast stored for a `(date, city)` is kept, so the backup run later the same
 morning doesn't overwrite it.
 
+Once a city has at least 7 forecast days with a matching actual day, the README adds a
+**forecast check** table for the last 30 days (`forecast_skill.py`). It shows the mean
+error and bias of the forecast full-day US AQI, and how often the forecast got the
+category right. Both sides are CAMS output: the "actual" is the model's hourly values
+for the day, fetched after it ended. So the table shows how much the day-ahead forecast
+moved, not how accurate it is against ground stations.
+
 `data/aqi_events.csv` is the category-change log written by `events.py`. A city's first row
 has an empty `from_category` and just records its starting state:
 
