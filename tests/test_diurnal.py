@@ -22,7 +22,7 @@ def rows(city, days, fn=curve, skip_hour=None):
         for h in range(24):
             if h != skip_hour:
                 out.append({"date": day, "hour": f"{h:02d}", "city": city,
-                            "us_aqi": str(fn(h)), "pm2_5": "", "pm10": ""})
+                            "us_aqi": "100", "pm2_5": str(fn(h)), "pm10": ""})
     return out
 
 
@@ -57,6 +57,15 @@ def test_readme_table():
               "no2": "", "o3": "", "fetched_at_utc": "2026-09-20T03:17:00Z"}
              for c in (DELHI, MUMBAI)]
     section = update_readme.render_section(snaps, hourly_rows=rows(DELHI, D) + rows(MUMBAI, 3))
-    assert f"| {DELHI} | 13:00–16:00 (55) | 21:00–00:00 (195) | 140 |" in section
+    assert f"| {DELHI} | 13:00–16:00 (55) | 21:00–00:00 (195) | 3.5× |" in section
     assert f"| {MUMBAI} |" not in section.split("**Time of day**")[1]
     assert "Time of day" not in update_readme.render_section(snaps, hourly_rows=[])
+
+
+def test_uses_pm25_not_smoothed_us_aqi():
+    # US AQI flat and high in the afternoon (like the 8 h ozone term); PM2.5 peaks at night.
+    rs = rows(DELHI, D)
+    for r in rs:
+        r["us_aqi"] = "200" if int(r["hour"]) in (16, 17, 18) else "150"
+    [p] = diurnal.profiles(rs)[2]
+    assert p.worst_start == 21  # from PM2.5

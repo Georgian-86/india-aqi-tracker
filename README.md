@@ -224,7 +224,11 @@ reading:
 `(date, hour, city)`. It has no `fetched_at_utc` column: that would double the file's size,
 and `aqi_daily.csv` records the fetch time for the same day. The README uses it for a
 **time of day** table (`diurnal.py`): for each city, the 3-hour stretches with the lowest
-and highest mean US AQI over the last 30 days. A city appears once every hour has at least
+and highest mean **PM2.5** over the last 30 days. It uses PM2.5, not the hourly US AQI,
+because Open-Meteo builds the hourly US AQI from 24-hour PM averages and 8-hour ozone
+averages, as the EPA defines it. That makes it nearly flat within a day, with an afternoon
+ozone bump. On real data it put Delhi's worst hours at 17:00–20:00, while hourly PM2.5 is
+worst around 22:00–01:00 and about 1.5× the afternoon low. A city appears once every hour has at least
 14 days of data. The profile is the CAMS model's daily cycle (night-time inversions,
 traffic peaks), not street-level readings.
 
