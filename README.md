@@ -248,6 +248,13 @@ the append-only `aqi_daily.csv` never needs its header rewritten:
   Comparisons within a season of the same year are fine. Year-over-year comparisons, above
   all Delhi's pre-monsoon US AQI, are not. That's why this project has no year-over-year
   table. The monthly reports are accurate descriptions of what the model said at the time.
+
+  New steps are caught automatically. **`drift.py`** compares each month with the same
+  month a year earlier. It flags a pollutant when the median city moves by more than ×1.67
+  (a model change moves every city at once, and real air doesn't), or when one city moves by
+  more than ×3. Each new monthly report includes this as a "Data consistency" section.
+  Run `python drift.py` to scan the whole history. On the backfill it flags exactly the two
+  steps above, and never flags PM2.5 or US AQI.
 - **Delhi's worst months in this data are March–June, not winter.** Monthly means peak
   pre-monsoon (up to ~380 in May 2026), driven by PM10 (dust), while winter months are ~185–
   205. Ground stations usually show the reverse, with PM2.5 smog in November–January as

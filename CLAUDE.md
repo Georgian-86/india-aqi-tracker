@@ -18,6 +18,10 @@ Open-Meteo Air Quality API (CAMS data) into
   cities at the end of June 2023 (about 2× before), and Delhi's March–June PM10 from 2025
   (about 4×). Don't add year-over-year or long-term trend features without handling this.
   Before adding one, compare same-month ratios across years for every city and pollutant.
+  `drift.py` does that check (`check_month`: median city beyond `ALL_CITIES_RATIO`, or
+  one city beyond `CITY_RATIO`, vs the same month a year earlier). Each new monthly report
+  has its result as a "Data consistency" section. Its thresholds were tuned on the real
+  backfill; re-run `python drift.py` on real data before changing them.
 - **Don't put O₃ back into the India AQI** (`update_readme.india_result` passes no ozone).
   CAMS surface ozone is strongly biased high over India. With it, O₃ was the prominent
   pollutant almost every day in every city. Check any new pollutant against real data
