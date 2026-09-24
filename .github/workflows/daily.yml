@@ -85,6 +85,10 @@ jobs:
         if: ${{ !cancelled() && steps.tests.outcome == 'success' }}
         run: python update_readme.py
 
+      - name: Latest JSON
+        if: ${{ !cancelled() && steps.tests.outcome == 'success' }}
+        run: python latest_json.py
+
       - name: Commit and push if changed
         if: ${{ !cancelled() && steps.tests.outcome == 'success' }}
         run: |

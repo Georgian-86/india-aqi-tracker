@@ -346,7 +346,9 @@ def render_section(
     lines += [
         "",
         "<sub>vs prev.: change since the previous snapshot; “–” when there is none or the "
-        "two were taken more than 3 h apart in time of day (AQI has a daily cycle).</sub>",
+        "two were taken more than 3 h apart in time of day (AQI has a daily cycle). "
+        "O₃ is the model's value, which runs well above ground measurements over India "
+        "(see [Caveats](#caveats)).</sub>",
     ]
     lines += render_daily(daily_rows or [], gas_rows)
     lines += render_summary(daily_rows or [])
