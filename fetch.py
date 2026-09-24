@@ -270,11 +270,15 @@ def _max_window_mean(values: list[float | None], window: int = O3_WINDOW_HOURS) 
 
 
 def append_rows(
-    path: Path, rows: list[dict[str, str]], columns: list[str] = COLUMNS
+    path: Path,
+    rows: list[dict[str, str]],
+    columns: list[str] = COLUMNS,
+    key: tuple[str, ...] = ("date", "city"),
 ) -> int:
-    """Append rows whose (date, city) isn't already present. Returns count written."""
-    existing = {(r["date"], r["city"]) for r in read_rows(path)}
-    new_rows = [r for r in rows if (r["date"], r["city"]) not in existing]
+    """Append rows whose key (default (date, city)) isn't already present.
+    Returns count written."""
+    existing = {tuple(r[k] for k in key) for r in read_rows(path)}
+    new_rows = [r for r in rows if tuple(r[k] for k in key) not in existing]
     if not new_rows:
         return 0
 
