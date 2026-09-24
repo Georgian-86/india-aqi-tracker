@@ -48,7 +48,8 @@ Open-Meteo Air Quality API (CAMS data) into
   labels: both were unreadable with a year of data. Check renders at README width (~850 px):
   keep the figure ≤ ~1150 px wide and fonts ≥ 8 pt.
 - `update_readme.py` replaces the text between `<!-- AQI:START -->` and `<!-- AQI:END -->`
-  with a snapshot table ("vs prev." is only shown when readings are within 3 h of the same
+  with a one-line headline (`_headline`: worst/cleanest snapshot city, count Unhealthy or
+  worse; omitted with < 2 cities), a snapshot table ("vs prev." is only shown when readings are within 3 h of the same
   time of day), a full-day table with a 7-day mean plus CPCB health advice (`NAQI_HEALTH`,
   Moderate or worse), and last-30-days tables on both scales (`render_summary`,
   `render_india_summary`, sharing `_summary_window`). They are omitted with fewer than 2

@@ -307,6 +307,28 @@ def _staleness_warning(latest: str, as_of: date | None) -> list[str]:
     ]
 
 
+def _headline(today: dict[str, dict[str, str]]) -> list[str]:
+    """One line answering "how bad is it right now?" before the tables."""
+    readings = [(city, float(today[city]["us_aqi"])) for city, _, _ in CITIES
+                if city in today and today[city]["us_aqi"]]
+    if len(readings) < 2:
+        return []
+    worst = max(readings, key=lambda cv: cv[1])  # first in CITIES order on ties
+    cleanest = min(readings, key=lambda cv: cv[1])
+    order = [label for _, label in AQI_CATEGORIES] + [HAZARDOUS]
+    bad = sum(order.index(aqi_category(v)) >= order.index("Unhealthy") for _, v in readings)
+
+    def fmt(cv: tuple[str, float]) -> str:
+        cat = aqi_category(cv[1])
+        return f"**{cv[0]}** {cv[1]:.0f} {CATEGORY_ICON[cat]} {cat}"
+
+    return [
+        f"**Right now (US AQI):** worst {fmt(worst)} · cleanest {fmt(cleanest)} · "
+        f"{bad} of {len(readings)} cities Unhealthy or worse.",
+        "",
+    ]
+
+
 def render_section(
     rows: list[dict[str, str]],
     daily_rows: list[dict[str, str]] | None = None,
@@ -327,7 +349,7 @@ def render_section(
     details = [f"fetched {fetched}"] if fetched else []
     details.append(f"{days} day{'s' if days != 1 else ''} collected")
 
-    lines = _staleness_warning(latest, as_of) + [
+    lines = _staleness_warning(latest, as_of) + _headline(today) + [
         f"**Latest snapshot: {latest}** ({' · '.join(details)})",
         "",
         "| City | US AQI | Category | vs prev. | PM2.5 (µg/m³) | PM10 (µg/m³) | NO₂ (µg/m³) | O₃ (µg/m³) |",

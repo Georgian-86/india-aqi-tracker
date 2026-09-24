@@ -112,7 +112,8 @@ Every day at **03:17 UTC (08:47 IST)** the GitHub Actions workflow
    days of data are skipped. It also regenerates [`reports/README.md`](reports/README.md),
    an index with one row per year; the section above links only the latest 3 reports;
 5. runs **`update_readme.py`** to rewrite the section between the `AQI:START` / `AQI:END`
-   markers above: the latest snapshot, the latest full day with a 7-day mean and **CPCB
+   markers above: a one-line headline (worst and cleanest city right now, and how many are
+   Unhealthy or worse), the latest snapshot, the latest full day with a 7-day mean and **CPCB
    health advice** for any city at Moderate or worse on India's scale, and **last 30 days**
    tables on both scales. If today's snapshot is missing (for example, the fetch failed), a
    ⚠️ warning appears at the top of the section, because the README step runs even when the
