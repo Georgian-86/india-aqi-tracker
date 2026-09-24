@@ -380,3 +380,26 @@ def test_chart_long_history_with_clipped_peak_renders(tmp_path, monkeypatch):
     assert out.stat().st_size > 0
     peaks = [n for n in notes if str(n).startswith("peak ")]
     assert peaks == ["peak 700 · 20 Feb"]  # only Delhi's panel, one note
+
+
+def snap_row(city, aqi, day="2026-09-24"):
+    return {"date": day, "city": city, "us_aqi": aqi, "pm2_5": "", "pm10": "", "no2": "",
+            "o3": "", "fetched_at_utc": f"{day}T03:17:00Z"}
+
+
+def test_headline_worst_cleanest_and_count():
+    from common import CITIES
+    names = [c for c, _, _ in CITIES]
+    rows = [snap_row(names[0], "179"), snap_row(names[1], "33"), snap_row(names[2], "205"),
+            snap_row(names[3], ""), snap_row(names[0], "400", day="2026-09-23")]  # old day ignored
+    section = update_readme.render_section(rows)
+    assert (f"**Right now (US AQI):** worst **{names[2]}** 205 🟣 Very Unhealthy · "
+            f"cleanest **{names[1]}** 33 🟢 Good · 2 of 3 cities Unhealthy or worse.") in section
+    # The headline comes before the snapshot table.
+    assert section.index("Right now") < section.index("| City | US AQI")
+
+
+def test_headline_omitted_for_single_city():
+    from common import CITIES
+    section = update_readme.render_section([snap_row(CITIES[0][0], "100")])
+    assert "Right now" not in section
