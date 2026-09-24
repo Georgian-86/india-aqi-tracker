@@ -1,0 +1,9 @@
+time_ist,city,from_category,to_category,us_aqi,pm2_5,pm10,fetched_at_utc
+2026-09-24T12:30,Delhi,,Unhealthy,157,44.2,61.7,2026-09-24T07:42:34Z
+2026-09-24T12:30,Mumbai,,Unhealthy for Sensitive Groups,104,30.4,50.5,2026-09-24T07:42:34Z
+2026-09-24T12:30,Bengaluru,,Moderate,54,5.6,7.9,2026-09-24T07:42:34Z
+2026-09-24T12:30,Kolkata,,Good,31,5.4,7.1,2026-09-24T07:42:34Z
+2026-09-24T12:30,Chennai,,Moderate,58,15.1,19.1,2026-09-24T07:42:34Z
+2026-09-24T12:30,Hyderabad,,Moderate,80,23.5,23.9,2026-09-24T07:42:34Z
+2026-09-24T12:30,Pune,,Moderate,91,26.3,30.4,2026-09-24T07:42:34Z
+2026-09-24T12:30,Ahmedabad,,Moderate,76,19.7,34.7,2026-09-24T07:42:34Z
