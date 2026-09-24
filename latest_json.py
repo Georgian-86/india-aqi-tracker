@@ -17,6 +17,7 @@ from common import (
     CITIES,
     CSV_PATH,
     DAILY_CSV_PATH,
+    FORECAST_CSV_PATH,
     GASES_CSV_PATH,
     ROOT,
     aqi_category,
@@ -25,7 +26,7 @@ from common import (
 from update_readme import india_result
 
 JSON_PATH = ROOT / "data" / "latest.json"
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 1  # adding keys (like "forecast") isn't breaking
 ATTRIBUTION = (
     "Air quality data from Open-Meteo (open-meteo.com), CC BY 4.0, generated using "
     "Copernicus Atmosphere Monitoring Service information. Model estimates, not "
@@ -91,15 +92,42 @@ def _full_day(daily_rows: list[dict[str, str]], gas_rows: list[dict[str, str]]) 
     return {"date": day, "cities": cities}
 
 
+def _forecast(forecast_rows: list[dict[str, str]], snapshot: dict | None) -> dict | None:
+    """Tomorrow's forecast, only if issued on the snapshot's day (else it's stale)."""
+    if snapshot is None:
+        return None
+    issued = snapshot["date"]
+    latest = {r["city"]: r for r in forecast_rows if r["issued"] == issued}
+    cities = []
+    for city, _, _ in CITIES:
+        r = latest.get(city)
+        if r is None:
+            continue
+        cities.append({
+            "city": city,
+            "us_aqi_mean": _num(r["us_aqi_mean"]),
+            "us_aqi_max": _num(r["us_aqi_max"]),
+            "us_category": aqi_category(r["us_aqi_mean"]),
+            "pm2_5_mean": _num(r["pm2_5_mean"]),
+            "pm10_mean": _num(r["pm10_mean"]),
+        })
+    if not cities:
+        return None
+    return {"date": next(iter(latest.values()))["date"], "issued": issued, "cities": cities}
+
+
 def build(
     rows: list[dict[str, str]],
     daily_rows: list[dict[str, str]],
     gas_rows: list[dict[str, str]],
+    forecast_rows: list[dict[str, str]] | None = None,
 ) -> dict:
+    snapshot = _snapshot(rows)
     return {
         "schema_version": SCHEMA_VERSION,
-        "snapshot": _snapshot(rows),
+        "snapshot": snapshot,
         "full_day": _full_day(daily_rows, gas_rows),
+        "forecast": _forecast(forecast_rows or [], snapshot),
         "units": {"concentrations": "µg/m³"},
         "notes": {
             "india_aqi": "CPCB National AQI from full-day mean PM2.5, PM10 and NO₂. "
@@ -114,9 +142,11 @@ def main(
     csv_path: Path = CSV_PATH,
     daily_csv_path: Path = DAILY_CSV_PATH,
     gases_csv_path: Path = GASES_CSV_PATH,
+    forecast_csv_path: Path = FORECAST_CSV_PATH,
 ) -> int:
     try:
-        data = build(read_rows(csv_path), read_rows(daily_csv_path), read_rows(gases_csv_path))
+        data = build(read_rows(csv_path), read_rows(daily_csv_path), read_rows(gases_csv_path),
+                     read_rows(forecast_csv_path))
     except (OSError, ValueError, KeyError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1

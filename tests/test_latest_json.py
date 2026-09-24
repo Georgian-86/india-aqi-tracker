@@ -51,18 +51,35 @@ def test_main_writes_stable_json(tmp_path):
     fetch.append_rows(csv, [snap("2026-09-23", DELHI, "180")], COLUMNS)
     fetch.append_rows(daily_csv, [daily("2026-09-22", DELHI, 172)], DAILY_COLUMNS)
     out = tmp_path / "out" / "latest.json"
-    assert latest_json.main(out, csv, daily_csv, gas_csv) == 0
+    assert latest_json.main(out, csv, daily_csv, gas_csv, tmp_path / "f.csv") == 0
     first = out.read_text(encoding="utf-8")
     data = json.loads(first)
     assert data["schema_version"] == latest_json.SCHEMA_VERSION
     assert "CC BY 4.0" in data["attribution"]
     # No timestamps of its own: rerunning on the same data changes nothing.
-    assert latest_json.main(out, csv, daily_csv, gas_csv) == 0
+    assert latest_json.main(out, csv, daily_csv, gas_csv, tmp_path / "f.csv") == 0
     assert out.read_text(encoding="utf-8") == first
 
 
 def test_main_with_no_data(tmp_path):
     out = tmp_path / "latest.json"
-    assert latest_json.main(out, tmp_path / "a", tmp_path / "b", tmp_path / "c") == 0
+    assert latest_json.main(out, tmp_path / "a", tmp_path / "b", tmp_path / "c",
+                            tmp_path / "d") == 0
     data = json.loads(out.read_text(encoding="utf-8"))
-    assert data["snapshot"] is None and data["full_day"] is None
+    assert data["snapshot"] is None and data["full_day"] is None and data["forecast"] is None
+
+
+def test_forecast_only_when_issued_with_snapshot():
+    def fc(city, mean, issued):
+        return {"date": "2026-09-24", "city": city, "issued": issued, "us_aqi_mean": mean,
+                "us_aqi_max": "", "pm2_5_mean": "30.0", "pm10_mean": "", "fetched_at_utc": "x"}
+    rows = [snap("2026-09-23", MUMBAI, "90"), snap("2026-09-23", DELHI, "180")]
+    data = latest_json.build(rows, [], [], [fc(MUMBAI, "80.5", "2026-09-23"),
+                                            fc(DELHI, "210.0", "2026-09-23")])
+    assert data["forecast"]["date"] == "2026-09-24"
+    assert data["forecast"]["issued"] == "2026-09-23"
+    delhi, mumbai = data["forecast"]["cities"]
+    assert delhi["city"] == DELHI and delhi["us_category"] == "Very Unhealthy"
+    assert mumbai["us_aqi_max"] is None and mumbai["pm2_5_mean"] == 30.0
+    stale = latest_json.build(rows, [], [], [fc(DELHI, "210.0", "2026-09-22")])
+    assert stale["forecast"] is None

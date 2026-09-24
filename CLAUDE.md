@@ -31,11 +31,15 @@ Open-Meteo Air Quality API (CAMS data) into
   is append-only. `append_rows` uses `extrasaction="ignore"`, so one row dict can feed
   both files. Follow the same pattern for any future per-day fields.
 - `fetch.py` makes one API call for all cities (`current` plus `hourly` with
-  `past_days=1&forecast_days=1`). It appends the snapshot to `data/aqi.csv` and yesterday's
+  `past_days=1&forecast_days=2`). It appends the snapshot to `data/aqi.csv` and yesterday's
   full-day stats (`parse_daily`) to `data/aqi_daily.csv` (`DAILY_COLUMNS`). Both are deduped
   on `(date, city)`. `--past-days N` (1–92, workflow input `past_days`) computes stats for
   the last N complete days. That's the backfill path, and the same code the daily run uses
-  with N=1.
+  with N=1. With `forecast_days=2` the same response carries tomorrow's hours:
+  `parse_forecast` stores tomorrow's `day_stats` in `data/aqi_forecast.csv`
+  (`FORECAST_COLUMNS`, with an `issued` day; first issue wins). A missing forecast is a
+  warning, not a failure. The README and `latest.json` show a forecast only if its `issued`
+  matches the latest snapshot's date, so a stale forecast is never presented as current.
 - `make_chart.py` renders `charts/aqi_trend.png` (matplotlib, `Agg` backend; `charts/` is
   git-ignored). The workflow publishes it as the only commit on the `charts` branch
   (force-pushed via `hash-object`/`mktree`/`commit-tree`). The README embeds it from
