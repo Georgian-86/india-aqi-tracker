@@ -11,3 +11,4 @@ time_ist,city,from_category,to_category,us_aqi,pm2_5,pm10,fetched_at_utc
 2026-09-25T00:30,Delhi,Unhealthy,Unhealthy for Sensitive Groups,140,32.9,65.0,2026-09-24T19:30:38Z
 2026-09-25T00:30,Pune,Unhealthy for Sensitive Groups,Moderate,79,19.0,25.8,2026-09-24T19:30:38Z
 2026-09-25T05:30,Bengaluru,Moderate,Good,40,2.5,2.8,2026-09-25T00:01:24Z
+2026-09-25T10:30,Mumbai,Unhealthy for Sensitive Groups,Moderate,90,30.7,51.9,2026-09-25T05:25:48Z
