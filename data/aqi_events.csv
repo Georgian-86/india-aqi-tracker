@@ -18,3 +18,4 @@ time_ist,city,from_category,to_category,us_aqi,pm2_5,pm10,fetched_at_utc
 2026-09-27T17:30,Bengaluru,Good,Moderate,70,15.4,20.3,2026-09-27T12:29:03Z
 2026-09-27T17:30,Chennai,Moderate,Unhealthy,166,27.5,31.9,2026-09-27T12:29:03Z
 2026-09-27T22:30,Delhi,Unhealthy for Sensitive Groups,Moderate,86,32.7,34.6,2026-09-27T17:18:25Z
+2026-09-28T02:30,Chennai,Unhealthy,Unhealthy for Sensitive Groups,103,30.5,38.4,2026-09-27T21:38:39Z
