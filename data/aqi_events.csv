@@ -20,3 +20,5 @@ time_ist,city,from_category,to_category,us_aqi,pm2_5,pm10,fetched_at_utc
 2026-09-27T22:30,Delhi,Unhealthy for Sensitive Groups,Moderate,86,32.7,34.6,2026-09-27T17:18:25Z
 2026-09-28T02:30,Chennai,Unhealthy,Unhealthy for Sensitive Groups,103,30.5,38.4,2026-09-27T21:38:39Z
 2026-09-28T10:30,Kolkata,Moderate,Unhealthy for Sensitive Groups,126,46.4,49.0,2026-09-28T05:54:30Z
+2026-09-28T19:30,Delhi,Moderate,Unhealthy for Sensitive Groups,117,42.0,48.8,2026-09-28T14:30:43Z
+2026-09-28T19:30,Chennai,Unhealthy for Sensitive Groups,Unhealthy,175,27.5,34.6,2026-09-28T14:30:43Z
