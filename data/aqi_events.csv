@@ -26,3 +26,4 @@ time_ist,city,from_category,to_category,us_aqi,pm2_5,pm10,fetched_at_utc
 2026-09-29T02:30,Chennai,Unhealthy,Moderate,97,26.7,32.7,2026-09-28T21:23:33Z
 2026-09-29T15:30,Chennai,Moderate,Unhealthy,160,42.4,49.2,2026-09-29T10:09:03Z
 2026-09-29T15:30,Hyderabad,Moderate,Unhealthy for Sensitive Groups,129,22.6,39.7,2026-09-29T10:09:03Z
+2026-09-29T23:30,Chennai,Unhealthy,Unhealthy for Sensitive Groups,140,22.9,29.4,2026-09-29T18:16:54Z
