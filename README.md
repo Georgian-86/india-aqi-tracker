@@ -136,7 +136,7 @@ Every day at **03:17 UTC (08:47 IST)** the GitHub Actions workflow
    days of data are skipped. It also regenerates [`reports/README.md`](reports/README.md),
    an index with one row per year; the section above links only the latest 3 reports;
 5. runs **`update_readme.py`** to rewrite the section between the `AQI:START` / `AQI:END`
-   markers above: a one-line headline (worst and cleanest city right now, and how many are
+   markers above: a one-line headline (worst and cleanest city in the latest reading, and how many are
    Unhealthy or worse), the latest snapshot, the latest full day with a 7-day mean and **CPCB
    health advice** for any city at Moderate or worse on India's scale, and **last 30 days**
    tables on both scales. If today's snapshot is missing (for example, the fetch failed), a
@@ -345,6 +345,12 @@ the append-only `aqi_daily.csv` never needs its header rewritten:
   bounds, especially for Delhi and Ahmedabad.
 - Open-Meteo extends US AQI above 500, the official top of the scale ("Beyond the AQI"), so
   dust-storm days can show values like 620. They're still categorised as Hazardous.
+- **The US AQI is 24-hour based, even hourly.** Open-Meteo follows the EPA method: PM2.5 and
+  PM10 enter as 24-hour rolling averages and O₃ as an 8-hour one. So a snapshot's US AQI lags
+  its PM columns, which are that hour's concentrations. Delhi can read "Unhealthy" in the
+  morning after a smoggy night while its current PM2.5 is already moderate. It also means
+  the hourly US AQI hardly shows the daily cycle, which is why the time-of-day table uses
+  hourly PM2.5.
 - `us_aqi_mean` is the mean of Open-Meteo's hourly US AQI values. This is not the same as
   the EPA's official daily AQI, which is computed from 24-hour mean concentrations.
 

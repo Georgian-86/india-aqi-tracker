@@ -328,7 +328,8 @@ def _headline(today: dict[str, dict[str, str]]) -> list[str]:
         return f"**{cv[0]}** {cv[1]:.0f} {CATEGORY_ICON[cat]} {cat}"
 
     return [
-        f"**Right now (US AQI):** worst {fmt(worst)} · cleanest {fmt(cleanest)} · "
+        f"**Latest reading (US AQI, 24-hour based):** worst {fmt(worst)} · "
+        f"cleanest {fmt(cleanest)} · "
         f"{bad} of {len(readings)} cities Unhealthy or worse.",
         "",
     ]
@@ -489,8 +490,11 @@ def render_section(
         )
     lines += [
         "",
-        "<sub>vs prev.: change since the previous snapshot; “–” when there is none or the "
-        "two were taken more than 3 h apart in time of day (AQI has a daily cycle). "
+        "<sub>The US AQI follows the EPA method: PM2.5 and PM10 enter as 24-hour rolling "
+        "averages (O₃ as 8-hour), so it lags the PM columns, which are this hour's "
+        "concentrations. A city can read Unhealthy after a smoggy night while its PM is "
+        "already low. vs prev.: change since the previous snapshot; “–” when there is none "
+        "or the two were taken more than 3 h apart in time of day. "
         "O₃ is the model's value, which runs well above ground measurements over India "
         "(see [Caveats](#caveats)).</sub>",
     ]
