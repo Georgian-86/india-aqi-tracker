@@ -37,3 +37,4 @@ time_ist,city,from_category,to_category,us_aqi,pm2_5,pm10,fetched_at_utc
 2026-10-01T15:30,Mumbai,Unhealthy for Sensitive Groups,Unhealthy,182,44.7,61.0,2026-10-01T10:28:32Z
 2026-10-01T23:30,Chennai,Unhealthy for Sensitive Groups,Moderate,88,20.1,32.6,2026-10-01T18:35:00Z
 2026-10-02T03:30,Bengaluru,Moderate,Unhealthy for Sensitive Groups,118,43.2,60.3,2026-10-01T22:55:37Z
+2026-10-02T18:30,Mumbai,Unhealthy,Very Unhealthy,286,65.2,88.5,2026-10-02T13:12:47Z
