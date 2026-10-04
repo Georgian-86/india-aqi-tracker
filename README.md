@@ -11,97 +11,97 @@ Pune and Ahmedabad**, once a day and commits the result to this repository. The 
 ## Today's air quality
 
 <!-- AQI:START -->
-**Right now (US AQI):** worst **Mumbai** 182 🔴 Unhealthy · cleanest **Ahmedabad** 68 🟡 Moderate · 3 of 8 cities Unhealthy or worse.
+**Right now (US AQI):** worst **Mumbai** 175 🔴 Unhealthy · cleanest **Ahmedabad** 65 🟡 Moderate · 3 of 8 cities Unhealthy or worse.
 
-**Forecast for 2026-10-04** (CAMS, full-day mean US AQI): Delhi 169 🔴 · Mumbai 151 🔴 · Bengaluru 96 🟡 · Kolkata 158 🔴 · Chennai 75 🟡 · Hyderabad 119 🟠 · Pune 105 🟠 · Ahmedabad 71 🟡
+**Forecast for 2026-10-05** (CAMS, full-day mean US AQI): Delhi 177 🔴 · Mumbai 108 🟠 · Bengaluru 95 🟡 · Kolkata 169 🔴 · Chennai 67 🟡 · Hyderabad 108 🟠 · Pune 113 🟠 · Ahmedabad 78 🟡
 
-**Category changes in the last 24 h** (IST, [full log](data/aqi_events.csv)): Mumbai Unhealthy → 🟣 Very Unhealthy (18:30) · Mumbai Very Unhealthy → 🔴 Unhealthy (01:30) · Mumbai Unhealthy → 🟠 Unhealthy for Sensitive Groups (10:30)
+**Category changes in the last 24 h** (IST, [full log](data/aqi_events.csv)): Mumbai Unhealthy for Sensitive Groups → 🟣 Very Unhealthy (17:30) · Bengaluru Unhealthy for Sensitive Groups → 🟡 Moderate (21:30) · Pune Unhealthy for Sensitive Groups → 🟡 Moderate (21:30) · Mumbai Very Unhealthy → 🟠 Unhealthy for Sensitive Groups (02:30)
 
-**Latest snapshot: 2026-10-03** (fetched 14:37 IST · 11 days collected)
+**Latest snapshot: 2026-10-04** (fetched 15:15 IST · 12 days collected)
 
 | City | US AQI | Category | vs prev. | PM2.5 (µg/m³) | PM10 (µg/m³) | NO₂ (µg/m³) | O₃ (µg/m³) |
 |---|--:|---|:-:|--:|--:|--:|--:|
-| Delhi | 167 | 🔴 Unhealthy | ▲ 5 | 54.2 | 186.3 | 5.1 | 170 |
-| Mumbai | 182 | 🔴 Unhealthy | ▼ 28 | 40.2 | 44.5 | 24.1 | 318 |
-| Bengaluru | 95 | 🟡 Moderate | ▼ 34 | 22.6 | 31.1 | 3.8 | 141 |
-| Kolkata | 160 | 🔴 Unhealthy | ▼ 9 | 65 | 92.7 | 3.3 | 161 |
-| Chennai | 100 | 🟡 Moderate | ▲ 24 | 27 | 38.8 | 2.3 | 102 |
-| Hyderabad | 116 | 🟠 Unhealthy for Sensitive Groups | = | 36.3 | 59.5 | 2.5 | 153 |
-| Pune | 101 | 🟠 Unhealthy for Sensitive Groups | ▼ 14 | 19.6 | 30.2 | 2.1 | 154 |
-| Ahmedabad | 68 | 🟡 Moderate | ▼ 5 | 8.7 | 12.9 | 2.2 | 131 |
+| Delhi | 174 | 🔴 Unhealthy | ▲ 7 | 46.7 | 163 | 4.9 | 189 |
+| Mumbai | 175 | 🔴 Unhealthy | ▼ 7 | 45.2 | 47 | 10.7 | 264 |
+| Bengaluru | 74 | 🟡 Moderate | ▼ 21 | 18.6 | 21.2 | 3 | 143 |
+| Kolkata | 170 | 🔴 Unhealthy | ▲ 10 | 61.9 | 86.4 | 3 | 169 |
+| Chennai | 66 | 🟡 Moderate | ▼ 34 | 18.4 | 27.8 | 1.8 | 80 |
+| Hyderabad | 119 | 🟠 Unhealthy for Sensitive Groups | ▲ 3 | 32.4 | 51.2 | 1.8 | 157 |
+| Pune | 84 | 🟡 Moderate | ▼ 17 | 22.6 | 32.6 | 1.8 | 160 |
+| Ahmedabad | 65 | 🟡 Moderate | ▼ 3 | 12.7 | 21 | 2 | 123 |
 
 <sub>vs prev.: change since the previous snapshot; “–” when there is none or the two were taken more than 3 h apart in time of day (AQI has a daily cycle). O₃ is the model's value, which runs well above ground measurements over India (see [Caveats](#caveats)).</sub>
 
-**Full day 2026-10-02** (mean of 24 hourly values — comparable across days, unlike the single snapshot above)
+**Full day 2026-10-03** (mean of 24 hourly values — comparable across days, unlike the single snapshot above)
 
 | City | Mean AQI | Category | Peak AQI | 7-day mean | Mean PM2.5 (µg/m³) | India AQI¹ |
 |---|--:|---|--:|--:|--:|---|
-| Delhi | 164 | 🔴 Unhealthy | 166 | 131 | 73.6 | 191 Moderate · PM10 |
-| Mumbai | 204 | 🟣 Very Unhealthy | 292 | 108 | 60.9 | 103 Moderate · PM2.5 |
-| Bengaluru | 124 | 🟠 Unhealthy for Sensitive Groups | 131 | 82 | 39.2 | 65 Satisfactory · PM2.5 |
-| Kolkata | 169 | 🔴 Unhealthy | 170 | 132 | 79.5 | 165 Moderate · PM2.5 |
-| Chennai | 79 | 🟡 Moderate | 86 | 103 | 27.4 | 46 Good · PM10 |
-| Hyderabad | 118 | 🟠 Unhealthy for Sensitive Groups | 132 | 103 | 39.9 | 66 Satisfactory · PM2.5 |
-| Pune | 116 | 🟠 Unhealthy for Sensitive Groups | 125 | 90 | 39.9 | 66 Satisfactory · PM2.5 |
-| Ahmedabad | 75 | 🟡 Moderate | 80 | 72 | 18.8 | 40 Good · NO₂ |
+| Delhi | 166 | 🔴 Unhealthy | 167 | 137 | 76.7 | 197 Moderate · PM10 |
+| Mumbai | 191 | 🔴 Unhealthy | 263 | 124 | 40.4 | 67 Satisfactory · PM2.5 |
+| Bengaluru | 97 | 🟡 Moderate | 109 | 90 | 27.1 | 45 Good · PM2.5 |
+| Kolkata | 164 | 🔴 Unhealthy | 167 | 148 | 77.2 | 157 Moderate · PM2.5 |
+| Chennai | 92 | 🟡 Moderate | 96 | 106 | 26.4 | 44 Good · PM2.5 |
+| Hyderabad | 117 | 🟠 Unhealthy for Sensitive Groups | 125 | 108 | 45.4 | 76 Satisfactory · PM2.5 |
+| Pune | 102 | 🟠 Unhealthy for Sensitive Groups | 111 | 95 | 29.4 | 49 Good · PM2.5 |
+| Ahmedabad | 68 | 🟡 Moderate | 71 | 73 | 17.7 | 37 Good · NO₂ |
 
 <sub>¹ India's National AQI (CPCB) scale: Good ≤ 50 · Satisfactory ≤ 100 · Moderate ≤ 200 · Poor ≤ 300 · Very Poor ≤ 400 · Severe. Computed from the day's mean PM2.5, PM10 and NO₂ (3 of CPCB's 8 pollutants, its minimum), labelled with the pollutant that sets it. ² marks a day with fewer than 3. Ozone is left out: the CAMS model's surface ozone runs far above ground measurements over India, and would make O₃ the main pollutant almost every day. The India figure often reads better than the US one because US breakpoints are stricter (PM2.5 is "Good" only up to 9 µg/m³ in the US, vs 30 in India).</sub>
 
 **Health (CPCB):**
-- **Delhi, Mumbai, Kolkata**, Moderate: May cause breathing discomfort to people with lung disease such as asthma, and discomfort to people with heart disease, children and older adults.
+- **Delhi, Kolkata**, Moderate: May cause breathing discomfort to people with lung disease such as asthma, and discomfort to people with heart disease, children and older adults.
 
-**Last 30 days** (2026-09-03 to 2026-10-02, full-day means · 30 days of data): days in each category
+**Last 30 days** (2026-09-04 to 2026-10-03, full-day means · 30 days of data): days in each category
 
 | City | 🟢 Good | 🟡 Moderate | 🟠 USG | 🔴 Unhealthy | 🟣 V. Unhealthy | 🟤 Hazardous | Mean | Worst day |
 |---|--:|--:|--:|--:|--:|--:|--:|---|
-| Delhi | · | 6 | 10 | 14 | · | · | 136 | 172 on 2026-09-22 |
-| Mumbai | · | 25 | 3 | 1 | 1 | · | 78 | 204 on 2026-10-02 |
-| Bengaluru | 5 | 24 | 1 | · | · | · | 63 | 124 on 2026-10-02 |
-| Kolkata | 3 | 15 | 7 | 5 | · | · | 96 | 173 on 2026-09-30 |
-| Chennai | · | 25 | 5 | · | · | · | 85 | 126 on 2026-09-29 |
-| Hyderabad | · | 27 | 3 | · | · | · | 83 | 136 on 2026-10-01 |
-| Pune | 12 | 15 | 3 | · | · | · | 61 | 122 on 2026-10-01 |
+| Delhi | · | 5 | 10 | 15 | · | · | 138 | 172 on 2026-09-22 |
+| Mumbai | · | 24 | 3 | 2 | 1 | · | 82 | 204 on 2026-10-02 |
+| Bengaluru | 4 | 25 | 1 | · | · | · | 65 | 124 on 2026-10-02 |
+| Kolkata | 3 | 15 | 6 | 6 | · | · | 98 | 173 on 2026-09-30 |
+| Chennai | · | 25 | 5 | · | · | · | 86 | 126 on 2026-09-29 |
+| Hyderabad | · | 26 | 4 | · | · | · | 85 | 136 on 2026-10-01 |
+| Pune | 11 | 15 | 4 | · | · | · | 64 | 122 on 2026-10-01 |
 | Ahmedabad | 1 | 28 | 1 | · | · | · | 70 | 115 on 2026-09-22 |
 
-**Last 30 days on India's scale** (2026-09-03 to 2026-10-02, CPCB categories from PM2.5, PM10 and NO₂): days in each category, and which pollutant set the index how often
+**Last 30 days on India's scale** (2026-09-04 to 2026-10-03, CPCB categories from PM2.5, PM10 and NO₂): days in each category, and which pollutant set the index how often
 
 | City | Good | Satisfactory | Moderate | Poor | Very Poor | Severe | Main pollutants |
 |---|--:|--:|--:|--:|--:|--:|---|
-| Delhi | 5 | 11 | 12 | 2 | · | · | PM2.5 23 · PM10 7 |
-| Mumbai | 24 | 4 | 2 | · | · | · | PM2.5 16 · PM10 14 |
-| Bengaluru | 28 | 2 | · | · | · | · | PM2.5 15 · NO₂ 11 · PM10 4 |
-| Kolkata | 18 | 6 | 6 | · | · | · | PM2.5 30 |
+| Delhi | 4 | 11 | 13 | 2 | · | · | PM2.5 22 · PM10 8 |
+| Mumbai | 23 | 5 | 2 | · | · | · | PM2.5 17 · PM10 13 |
+| Bengaluru | 28 | 2 | · | · | · | · | PM2.5 16 · NO₂ 10 · PM10 4 |
+| Kolkata | 18 | 5 | 7 | · | · | · | PM2.5 30 |
 | Chennai | 27 | 3 | · | · | · | · | PM2.5 29 · PM10 1 |
-| Hyderabad | 22 | 7 | 1 | · | · | · | PM2.5 28 · PM10 2 |
+| Hyderabad | 21 | 8 | 1 | · | · | · | PM2.5 28 · PM10 2 |
 | Pune | 26 | 4 | · | · | · | · | PM2.5 22 · PM10 5 · NO₂ 3 |
-| Ahmedabad | 28 | 2 | · | · | · | · | PM2.5 16 · PM10 10 · NO₂ 4 |
+| Ahmedabad | 28 | 2 | · | · | · | · | PM2.5 16 · PM10 9 · NO₂ 5 |
 
-**Forecast check** (2026-09-03 to 2026-10-02): the day-ahead full-day mean US AQI vs the day's actual mean
+**Forecast check** (2026-09-04 to 2026-10-03): the day-ahead full-day mean US AQI vs the day's actual mean
 
 | City | Days | Mean error | Bias | Category right |
 |---|--:|--:|--:|--:|
-| Delhi | 8 | 20 | +13 | 62% |
-| Mumbai | 8 | 9 | -6 | 62% |
-| Bengaluru | 8 | 5 | -1 | 100% |
-| Kolkata | 8 | 4 | -1 | 88% |
-| Chennai | 8 | 8 | +4 | 75% |
-| Hyderabad | 8 | 6 | -5 | 100% |
-| Pune | 8 | 5 | -4 | 88% |
-| Ahmedabad | 8 | 4 | +2 | 100% |
+| Delhi | 9 | 19 | +11 | 67% |
+| Mumbai | 9 | 10 | -7 | 67% |
+| Bengaluru | 9 | 5 | +0 | 89% |
+| Kolkata | 9 | 4 | -2 | 89% |
+| Chennai | 9 | 7 | +4 | 78% |
+| Hyderabad | 9 | 5 | -4 | 100% |
+| Pune | 9 | 5 | -4 | 89% |
+| Ahmedabad | 9 | 4 | +2 | 100% |
 
 <sub>Bias > 0: the forecast ran high. Both sides are CAMS output (the actual is the model's hourly values fetched after the day ended), so this shows how much the forecast moved, not accuracy against ground stations. Cities need 7+ days to be listed.</sub>
 
-**Time of day** (2026-09-03 to 2026-10-02, IST): the 3-hour stretches with the lowest and highest mean PM2.5
+**Time of day** (2026-09-04 to 2026-10-03, IST): the 3-hour stretches with the lowest and highest mean PM2.5
 
 | City | Cleanest (µg/m³) | Worst (µg/m³) | Worst ÷ cleanest |
 |---|---|---|--:|
-| Delhi | 10:00–13:00 (40) | 21:00–00:00 (69) | 1.7× |
-| Mumbai | 05:00–08:00 (18) | 12:00–15:00 (25) | 1.3× |
+| Delhi | 10:00–13:00 (41) | 22:00–01:00 (70) | 1.7× |
+| Mumbai | 04:00–07:00 (19) | 12:00–15:00 (26) | 1.3× |
 | Bengaluru | 14:00–17:00 (13) | 19:00–22:00 (26) | 2.0× |
-| Kolkata | 14:00–17:00 (27) | 21:00–00:00 (45) | 1.6× |
-| Chennai | 05:00–08:00 (18) | 17:00–20:00 (24) | 1.3× |
-| Hyderabad | 14:00–17:00 (19) | 21:00–00:00 (34) | 1.8× |
-| Pune | 09:00–12:00 (13) | 21:00–00:00 (21) | 1.6× |
+| Kolkata | 14:00–17:00 (29) | 21:00–00:00 (47) | 1.6× |
+| Chennai | 05:00–08:00 (19) | 17:00–20:00 (24) | 1.3× |
+| Hyderabad | 14:00–17:00 (20) | 21:00–00:00 (35) | 1.8× |
+| Pune | 14:00–17:00 (14) | 21:00–00:00 (22) | 1.6× |
 | Ahmedabad | 06:00–09:00 (16) | 20:00–23:00 (28) | 1.8× |
 
 <sub>From CAMS hourly PM2.5: the model's daily cycle (night-time inversions, traffic), not street-level readings. Hourly US AQI isn't used here: it's built from 24-hour PM averages, so it barely changes within a day.</sub>
