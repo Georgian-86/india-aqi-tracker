@@ -95,3 +95,4 @@ time_ist,city,from_category,to_category,us_aqi,pm2_5,pm10,fetched_at_utc
 2026-10-16T16:30,Kolkata,Unhealthy for Sensitive Groups,Very Unhealthy,205,59.0,60.3,2026-10-16T11:55:37Z
 2026-10-16T16:30,Ahmedabad,Moderate,Unhealthy for Sensitive Groups,111,30.9,68.7,2026-10-16T11:55:37Z
 2026-10-16T21:30,Kolkata,Very Unhealthy,Unhealthy,153,70.8,71.5,2026-10-16T16:58:36Z
+2026-10-17T02:30,Mumbai,Very Unhealthy,Unhealthy,165,67.3,80.6,2026-10-16T21:43:46Z
