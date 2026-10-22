@@ -11,7 +11,7 @@ Pune and Ahmedabad**, once a day and commits the result to this repository. The 
 ## Today's air quality
 
 <!-- AQI:START -->
-**Right now (US AQI):** worst **Mumbai** 211 🟣 Very Unhealthy · cleanest **Chennai** 27 🟢 Good · 3 of 8 cities Unhealthy or worse.
+**Latest reading (US AQI, 24-hour based):** worst **Mumbai** 211 🟣 Very Unhealthy · cleanest **Chennai** 27 🟢 Good · 3 of 8 cities Unhealthy or worse.
 
 **Forecast for 2026-10-23** (CAMS, full-day mean US AQI): Delhi 176 🔴 · Mumbai 194 🔴 · Bengaluru 42 🟢 · Kolkata 171 🔴 · Chennai 29 🟢 · Hyderabad 120 🟠 · Pune 104 🟠 · Ahmedabad 123 🟠
 
@@ -30,7 +30,7 @@ Pune and Ahmedabad**, once a day and commits the result to this repository. The 
 | Pune | 96 | 🟡 Moderate | ▼ 27 | 27.9 | 34.9 | 0.9 | 153 |
 | Ahmedabad | 146 | 🟠 Unhealthy for Sensitive Groups | ▲ 27 | 46.8 | 56.3 | 2.1 | 165 |
 
-<sub>vs prev.: change since the previous snapshot; “–” when there is none or the two were taken more than 3 h apart in time of day (AQI has a daily cycle). O₃ is the model's value, which runs well above ground measurements over India (see [Caveats](#caveats)).</sub>
+<sub>The US AQI follows the EPA method: PM2.5 and PM10 enter as 24-hour rolling averages (O₃ as 8-hour), so it lags the PM columns, which are this hour's concentrations. A city can read Unhealthy after a smoggy night while its PM is already low. vs prev.: change since the previous snapshot; “–” when there is none or the two were taken more than 3 h apart in time of day. O₃ is the model's value, which runs well above ground measurements over India (see [Caveats](#caveats)).</sub>
 
 **Full day 2026-10-21** (mean of 24 hourly values — comparable across days, unlike the single snapshot above)
 
