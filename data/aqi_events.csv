@@ -114,3 +114,4 @@ time_ist,city,from_category,to_category,us_aqi,pm2_5,pm10,fetched_at_utc
 2026-10-23T17:30,Mumbai,Unhealthy,Very Unhealthy,266,92.9,100.1,2026-10-23T12:08:46Z
 2026-10-24T02:30,Mumbai,Very Unhealthy,Unhealthy,172,76.6,85.9,2026-10-23T21:41:59Z
 2026-10-24T16:30,Mumbai,Unhealthy,Very Unhealthy,281,120.6,133.2,2026-10-24T11:39:11Z
+2026-10-25T02:30,Mumbai,Very Unhealthy,Unhealthy,183,85.0,95.5,2026-10-24T21:12:17Z
