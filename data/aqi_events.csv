@@ -120,3 +120,9 @@ time_ist,city,from_category,to_category,us_aqi,pm2_5,pm10,fetched_at_utc
 2026-10-26T02:30,Hyderabad,Unhealthy for Sensitive Groups,Moderate,82,22.7,28.2,2026-10-25T21:15:12Z
 2026-10-26T04:30,Kolkata,Unhealthy,Unhealthy for Sensitive Groups,132,39.0,40.4,2026-10-25T23:34:18Z
 2026-10-26T10:30,Chennai,Moderate,Unhealthy for Sensitive Groups,110,52.9,63.1,2026-10-26T05:20:58Z
+2026-10-26T18:30,Mumbai,Unhealthy,Very Unhealthy,282,49.1,58.0,2026-10-26T13:36:17Z
+2026-10-26T18:30,Bengaluru,Moderate,Unhealthy for Sensitive Groups,114,33.6,35.0,2026-10-26T13:36:17Z
+2026-10-26T18:30,Kolkata,Unhealthy for Sensitive Groups,Unhealthy,177,44.4,45.8,2026-10-26T13:36:17Z
+2026-10-26T18:30,Chennai,Unhealthy for Sensitive Groups,Unhealthy,163,65.7,75.0,2026-10-26T13:36:17Z
+2026-10-26T18:30,Hyderabad,Moderate,Unhealthy for Sensitive Groups,131,30.3,35.0,2026-10-26T13:36:17Z
+2026-10-26T18:30,Ahmedabad,Unhealthy for Sensitive Groups,Unhealthy,166,40.4,53.7,2026-10-26T13:36:17Z
