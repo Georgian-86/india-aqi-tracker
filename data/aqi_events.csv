@@ -159,3 +159,4 @@ time_ist,city,from_category,to_category,us_aqi,pm2_5,pm10,fetched_at_utc
 2026-10-31T14:30,Delhi,Moderate,Unhealthy for Sensitive Groups,116,31.3,86.8,2026-10-31T09:58:08Z
 2026-10-31T14:30,Bengaluru,Moderate,Unhealthy for Sensitive Groups,112,27.9,30.5,2026-10-31T09:58:08Z
 2026-10-31T22:30,Mumbai,Unhealthy for Sensitive Groups,Very Unhealthy,201,38.2,39.7,2026-10-31T17:22:11Z
+2026-11-01T02:30,Mumbai,Very Unhealthy,Unhealthy for Sensitive Groups,134,35.3,36.3,2026-10-31T21:52:50Z
