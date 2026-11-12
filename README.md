@@ -15,7 +15,7 @@ Pune and Ahmedabad**, once a day and commits the result to this repository. The 
 
 **Forecast for 2026-11-13** (CAMS, full-day mean US AQI): Delhi 262 🟣 · Mumbai 162 🔴 · Bengaluru 84 🟡 · Kolkata 160 🔴 · Chennai 74 🟡 · Hyderabad 128 🟠 · Pune 99 🟡 · Ahmedabad 154 🔴
 
-**Category changes in the last 24 h** (IST, [full log](data/aqi_events.csv)): Mumbai Unhealthy for Sensitive Groups → 🟣 Very Unhealthy (22:30) · Mumbai Very Unhealthy → 🟠 Unhealthy for Sensitive Groups (06:30) · Kolkata Unhealthy → 🟠 Unhealthy for Sensitive Groups (06:30)
+**Category changes in the last 24 h** (IST, [full log](data/aqi_events.csv)): Mumbai Unhealthy for Sensitive Groups → 🟣 Very Unhealthy (22:30) · Mumbai Very Unhealthy → 🟠 Unhealthy for Sensitive Groups (06:30) · Kolkata Unhealthy → 🟠 Unhealthy for Sensitive Groups (06:30) · Mumbai Unhealthy for Sensitive Groups → 🟣 Very Unhealthy (16:30) · Kolkata Unhealthy for Sensitive Groups → 🔴 Unhealthy (16:30) · Ahmedabad Moderate → 🟠 Unhealthy for Sensitive Groups (16:30)
 
 **Latest snapshot: 2026-11-12** (fetched 16:32 IST · 51 days collected)
 
