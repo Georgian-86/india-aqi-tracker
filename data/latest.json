@@ -1,120 +1,120 @@
 {
   "schema_version": 1,
   "snapshot": {
-    "date": "2026-11-26",
+    "date": "2026-11-27",
     "cities": [
       {
         "city": "Delhi",
         "lat": 28.6139,
         "lon": 77.209,
-        "us_aqi": 197.0,
-        "us_category": "Unhealthy",
-        "pm2_5": 79.6,
-        "pm10": 81.0,
-        "no2": 80.3,
-        "o3": 54.0,
-        "fetched_at_utc": "2026-11-26T12:27:33Z"
+        "us_aqi": 217.0,
+        "us_category": "Very Unhealthy",
+        "pm2_5": 119.7,
+        "pm10": 121.1,
+        "no2": 104.3,
+        "o3": 62.0,
+        "fetched_at_utc": "2026-11-27T12:13:09Z"
       },
       {
         "city": "Mumbai",
         "lat": 19.076,
         "lon": 72.8777,
-        "us_aqi": 207.0,
-        "us_category": "Very Unhealthy",
-        "pm2_5": 57.7,
-        "pm10": 64.3,
-        "no2": 43.7,
-        "o3": 151.0,
-        "fetched_at_utc": "2026-11-26T12:27:33Z"
+        "us_aqi": 185.0,
+        "us_category": "Unhealthy",
+        "pm2_5": 61.2,
+        "pm10": 65.0,
+        "no2": 34.7,
+        "o3": 159.0,
+        "fetched_at_utc": "2026-11-27T12:13:09Z"
       },
       {
         "city": "Bengaluru",
         "lat": 12.9716,
         "lon": 77.5946,
-        "us_aqi": 34.0,
-        "us_category": "Good",
-        "pm2_5": 11.4,
+        "us_aqi": 55.0,
+        "us_category": "Moderate",
+        "pm2_5": 11.5,
         "pm10": 11.6,
-        "no2": 36.3,
-        "o3": 40.0,
-        "fetched_at_utc": "2026-11-26T12:27:33Z"
+        "no2": 31.1,
+        "o3": 45.0,
+        "fetched_at_utc": "2026-11-27T12:13:09Z"
       },
       {
         "city": "Kolkata",
         "lat": 22.5726,
         "lon": 88.3639,
-        "us_aqi": 204.0,
+        "us_aqi": 223.0,
         "us_category": "Very Unhealthy",
-        "pm2_5": 134.1,
-        "pm10": 137.4,
-        "no2": 41.4,
-        "o3": 112.0,
-        "fetched_at_utc": "2026-11-26T12:27:33Z"
+        "pm2_5": 95.7,
+        "pm10": 97.8,
+        "no2": 35.9,
+        "o3": 92.0,
+        "fetched_at_utc": "2026-11-27T12:13:09Z"
       },
       {
         "city": "Chennai",
         "lat": 13.0827,
         "lon": 80.2707,
-        "us_aqi": 44.0,
+        "us_aqi": 39.0,
         "us_category": "Good",
-        "pm2_5": 6.0,
-        "pm10": 8.1,
-        "no2": 10.0,
-        "o3": 40.0,
-        "fetched_at_utc": "2026-11-26T12:27:33Z"
+        "pm2_5": 10.4,
+        "pm10": 13.4,
+        "no2": 8.3,
+        "o3": 60.0,
+        "fetched_at_utc": "2026-11-27T12:13:09Z"
       },
       {
         "city": "Hyderabad",
         "lat": 17.385,
         "lon": 78.4867,
-        "us_aqi": 53.0,
+        "us_aqi": 81.0,
         "us_category": "Moderate",
-        "pm2_5": 15.3,
-        "pm10": 15.7,
-        "no2": 8.2,
-        "o3": 95.0,
-        "fetched_at_utc": "2026-11-26T12:27:33Z"
+        "pm2_5": 31.3,
+        "pm10": 32.4,
+        "no2": 9.1,
+        "o3": 111.0,
+        "fetched_at_utc": "2026-11-27T12:13:09Z"
       },
       {
         "city": "Pune",
         "lat": 18.5204,
         "lon": 73.8567,
-        "us_aqi": 132.0,
+        "us_aqi": 131.0,
         "us_category": "Unhealthy for Sensitive Groups",
-        "pm2_5": 28.5,
-        "pm10": 29.5,
-        "no2": 5.5,
-        "o3": 145.0,
-        "fetched_at_utc": "2026-11-26T12:27:33Z"
+        "pm2_5": 26.6,
+        "pm10": 27.1,
+        "no2": 7.1,
+        "o3": 148.0,
+        "fetched_at_utc": "2026-11-27T12:13:09Z"
       },
       {
         "city": "Ahmedabad",
         "lat": 23.0225,
         "lon": 72.5714,
-        "us_aqi": 140.0,
+        "us_aqi": 146.0,
         "us_category": "Unhealthy for Sensitive Groups",
-        "pm2_5": 36.1,
-        "pm10": 38.0,
-        "no2": 23.9,
-        "o3": 125.0,
-        "fetched_at_utc": "2026-11-26T12:27:33Z"
+        "pm2_5": 42.6,
+        "pm10": 44.4,
+        "no2": 21.0,
+        "o3": 120.0,
+        "fetched_at_utc": "2026-11-27T12:13:09Z"
       }
     ]
   },
   "full_day": {
-    "date": "2026-11-25",
+    "date": "2026-11-26",
     "cities": [
       {
         "city": "Delhi",
         "hours": 24,
-        "us_aqi_mean": 175.6,
-        "us_aqi_max": 190.0,
+        "us_aqi_mean": 197.5,
+        "us_aqi_max": 201.0,
         "us_category": "Unhealthy",
-        "pm2_5_mean": 113.2,
-        "pm10_mean": 116.1,
-        "no2_mean": 53.1,
+        "pm2_5_mean": 119.8,
+        "pm10_mean": 121.7,
+        "no2_mean": 59.4,
         "india_aqi": {
-          "index": 277,
+          "index": 299,
           "category": "Poor",
           "prominent": "PM2.5",
           "pollutants": 3
@@ -123,15 +123,15 @@
       {
         "city": "Mumbai",
         "hours": 24,
-        "us_aqi_mean": 171.5,
-        "us_aqi_max": 220.0,
+        "us_aqi_mean": 166.2,
+        "us_aqi_max": 211.0,
         "us_category": "Unhealthy",
-        "pm2_5_mean": 58.6,
-        "pm10_mean": 61.3,
-        "no2_mean": 33.7,
+        "pm2_5_mean": 65.6,
+        "pm10_mean": 68.8,
+        "no2_mean": 27.5,
         "india_aqi": {
-          "index": 98,
-          "category": "Satisfactory",
+          "index": 119,
+          "category": "Moderate",
           "prominent": "PM2.5",
           "pollutants": 3
         }
@@ -139,14 +139,14 @@
       {
         "city": "Bengaluru",
         "hours": 24,
-        "us_aqi_mean": 34.1,
-        "us_aqi_max": 36.0,
+        "us_aqi_mean": 33.9,
+        "us_aqi_max": 47.0,
         "us_category": "Good",
-        "pm2_5_mean": 5.5,
-        "pm10_mean": 5.8,
-        "no2_mean": 15.2,
+        "pm2_5_mean": 8.8,
+        "pm10_mean": 9.8,
+        "no2_mean": 16.2,
         "india_aqi": {
-          "index": 19,
+          "index": 20,
           "category": "Good",
           "prominent": "NO₂",
           "pollutants": 3
@@ -155,15 +155,15 @@
       {
         "city": "Kolkata",
         "hours": 24,
-        "us_aqi_mean": 176.1,
-        "us_aqi_max": 192.0,
-        "us_category": "Unhealthy",
-        "pm2_5_mean": 116.9,
-        "pm10_mean": 120.5,
-        "no2_mean": 22.5,
+        "us_aqi_mean": 206.1,
+        "us_aqi_max": 218.0,
+        "us_category": "Very Unhealthy",
+        "pm2_5_mean": 145.0,
+        "pm10_mean": 148.1,
+        "no2_mean": 28.6,
         "india_aqi": {
-          "index": 290,
-          "category": "Poor",
+          "index": 319,
+          "category": "Very Poor",
           "prominent": "PM2.5",
           "pollutants": 3
         }
@@ -171,12 +171,12 @@
       {
         "city": "Chennai",
         "hours": 24,
-        "us_aqi_mean": 29.0,
-        "us_aqi_max": 38.0,
+        "us_aqi_mean": 43.8,
+        "us_aqi_max": 47.0,
         "us_category": "Good",
-        "pm2_5_mean": 7.0,
-        "pm10_mean": 10.1,
-        "no2_mean": 6.1,
+        "pm2_5_mean": 6.9,
+        "pm10_mean": 9.6,
+        "no2_mean": 6.3,
         "india_aqi": {
           "index": 12,
           "category": "Good",
@@ -187,14 +187,14 @@
       {
         "city": "Hyderabad",
         "hours": 24,
-        "us_aqi_mean": 61.8,
-        "us_aqi_max": 77.0,
+        "us_aqi_mean": 51.8,
+        "us_aqi_max": 58.0,
         "us_category": "Moderate",
-        "pm2_5_mean": 9.0,
-        "pm10_mean": 9.6,
-        "no2_mean": 6.6,
+        "pm2_5_mean": 13.5,
+        "pm10_mean": 14.1,
+        "no2_mean": 7.4,
         "india_aqi": {
-          "index": 15,
+          "index": 22,
           "category": "Good",
           "prominent": "PM2.5",
           "pollutants": 3
@@ -203,14 +203,14 @@
       {
         "city": "Pune",
         "hours": 24,
-        "us_aqi_mean": 101.3,
-        "us_aqi_max": 110.0,
+        "us_aqi_mean": 125.1,
+        "us_aqi_max": 132.0,
         "us_category": "Unhealthy for Sensitive Groups",
-        "pm2_5_mean": 36.6,
-        "pm10_mean": 37.8,
-        "no2_mean": 15.9,
+        "pm2_5_mean": 46.1,
+        "pm10_mean": 47.0,
+        "no2_mean": 21.3,
         "india_aqi": {
-          "index": 61,
+          "index": 77,
           "category": "Satisfactory",
           "prominent": "PM2.5",
           "pollutants": 3
@@ -219,14 +219,14 @@
       {
         "city": "Ahmedabad",
         "hours": 24,
-        "us_aqi_mean": 112.9,
-        "us_aqi_max": 126.0,
+        "us_aqi_mean": 141.6,
+        "us_aqi_max": 149.0,
         "us_category": "Unhealthy for Sensitive Groups",
-        "pm2_5_mean": 46.9,
-        "pm10_mean": 49.0,
-        "no2_mean": 36.8,
+        "pm2_5_mean": 51.0,
+        "pm10_mean": 52.6,
+        "no2_mean": 43.3,
         "india_aqi": {
-          "index": 78,
+          "index": 85,
           "category": "Satisfactory",
           "prominent": "PM2.5",
           "pollutants": 3
@@ -235,72 +235,72 @@
     ]
   },
   "forecast": {
-    "date": "2026-11-27",
-    "issued": "2026-11-26",
+    "date": "2026-11-28",
+    "issued": "2026-11-27",
     "cities": [
       {
         "city": "Delhi",
-        "us_aqi_mean": 196.1,
-        "us_aqi_max": 210.0,
-        "us_category": "Unhealthy",
-        "pm2_5_mean": 139.6,
-        "pm10_mean": 141.0
+        "us_aqi_mean": 256.2,
+        "us_aqi_max": 266.0,
+        "us_category": "Very Unhealthy",
+        "pm2_5_mean": 190.6,
+        "pm10_mean": 192.0
       },
       {
         "city": "Mumbai",
-        "us_aqi_mean": 158.9,
-        "us_aqi_max": 195.0,
+        "us_aqi_mean": 166.8,
+        "us_aqi_max": 209.0,
         "us_category": "Unhealthy",
-        "pm2_5_mean": 54.8,
-        "pm10_mean": 56.9
+        "pm2_5_mean": 56.0,
+        "pm10_mean": 57.8
       },
       {
         "city": "Bengaluru",
-        "us_aqi_mean": 50.8,
-        "us_aqi_max": 53.0,
+        "us_aqi_mean": 55.5,
+        "us_aqi_max": 58.0,
         "us_category": "Moderate",
-        "pm2_5_mean": 9.7,
-        "pm10_mean": 10.5
+        "pm2_5_mean": 13.4,
+        "pm10_mean": 13.8
       },
       {
         "city": "Kolkata",
-        "us_aqi_mean": 224.2,
-        "us_aqi_max": 229.0,
-        "us_category": "Very Unhealthy",
-        "pm2_5_mean": 134.2,
-        "pm10_mean": 135.7
+        "us_aqi_mean": 184.5,
+        "us_aqi_max": 205.0,
+        "us_category": "Unhealthy",
+        "pm2_5_mean": 84.3,
+        "pm10_mean": 85.1
       },
       {
         "city": "Chennai",
-        "us_aqi_mean": 43.8,
-        "us_aqi_max": 48.0,
-        "us_category": "Good",
-        "pm2_5_mean": 8.8,
-        "pm10_mean": 11.0
+        "us_aqi_mean": 66.8,
+        "us_aqi_max": 93.0,
+        "us_category": "Moderate",
+        "pm2_5_mean": 33.5,
+        "pm10_mean": 39.7
       },
       {
         "city": "Hyderabad",
-        "us_aqi_mean": 74.5,
-        "us_aqi_max": 102.0,
-        "us_category": "Moderate",
-        "pm2_5_mean": 30.1,
-        "pm10_mean": 31.0
+        "us_aqi_mean": 103.0,
+        "us_aqi_max": 109.0,
+        "us_category": "Unhealthy for Sensitive Groups",
+        "pm2_5_mean": 38.9,
+        "pm10_mean": 40.0
       },
       {
         "city": "Pune",
-        "us_aqi_mean": 109.5,
-        "us_aqi_max": 124.0,
+        "us_aqi_mean": 101.1,
+        "us_aqi_max": 126.0,
         "us_category": "Unhealthy for Sensitive Groups",
-        "pm2_5_mean": 34.1,
-        "pm10_mean": 34.7
+        "pm2_5_mean": 30.2,
+        "pm10_mean": 30.6
       },
       {
         "city": "Ahmedabad",
-        "us_aqi_mean": 135.9,
-        "us_aqi_max": 139.0,
+        "us_aqi_mean": 112.6,
+        "us_aqi_max": 136.0,
         "us_category": "Unhealthy for Sensitive Groups",
-        "pm2_5_mean": 47.6,
-        "pm10_mean": 49.1
+        "pm2_5_mean": 36.6,
+        "pm10_mean": 37.6
       }
     ]
   },
